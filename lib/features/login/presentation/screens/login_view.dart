@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../widgets/google_mark.dart';
 
@@ -84,7 +85,11 @@ class LoginView extends StatelessWidget {
                         width: double.infinity,
                         height: 72,
                         child: ElevatedButton(
-                          onPressed: () {},
+                          onPressed: () async {
+                            await Supabase.instance.client.auth.signInWithOAuth(
+                              OAuthProvider.google,
+                            );
+                          },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.white,
                             foregroundColor: const Color(0xFF222222),
