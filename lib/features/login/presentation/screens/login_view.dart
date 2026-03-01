@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -88,6 +89,9 @@ class LoginView extends StatelessWidget {
                           onPressed: () async {
                             await Supabase.instance.client.auth.signInWithOAuth(
                               OAuthProvider.google,
+                              redirectTo: kIsWeb
+                                  ? Uri.base.origin
+                                  : 'io.supabase.minasgo://login-callback/',
                             );
                           },
                           style: ElevatedButton.styleFrom(
