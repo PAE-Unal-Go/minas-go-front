@@ -1,19 +1,20 @@
 import 'package:flutter/material.dart';
 
-import 'poi_detail_view.dart';
 import '../widgets/explore_fab.dart';
+import '../../../map/domain/entities/punto_de_interes.dart';
+import 'poi_detail_view.dart';
 
 class CategoryPointsView extends StatelessWidget {
   final String categoryName;
   final String categoryDescription;
   final String? categoryImageUrl;
-  final List<Map<String, dynamic>> points;
+  final List<PuntoDeInteres> puntos;
 
   const CategoryPointsView({
     super.key,
     required this.categoryName,
     required this.categoryDescription,
-    required this.points,
+    required this.puntos,
     this.categoryImageUrl,
   });
 
@@ -27,9 +28,7 @@ class CategoryPointsView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final discoveredCount = points
-        .where((point) => point['discovered'] == true)
-        .length;
+    final discoveredCount = puntos.where((p) => p.visitado).length;
 
     return Scaffold(
       backgroundColor: _neutralBackground,
@@ -93,7 +92,7 @@ class CategoryPointsView extends StatelessWidget {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Descubiertos: $discoveredCount/${points.length}',
+                      'Descubiertos: $discoveredCount/${puntos.length}',
                       style: const TextStyle(
                         color: _secondaryDark,
                         fontSize: 13,
@@ -106,10 +105,10 @@ class CategoryPointsView extends StatelessWidget {
             ),
             const SizedBox(height: 18),
             Expanded(
-              child: points.isEmpty
+              child: puntos.isEmpty
                   ? const Center(
                       child: Text(
-                        'No hay puntos configurados para esta categoria.',
+                        'No hay puntos configurados para esta categoría.',
                         style: TextStyle(
                           color: _neutralTextSecondary,
                           fontSize: 14,
@@ -119,36 +118,20 @@ class CategoryPointsView extends StatelessWidget {
                     )
                   : ListView.separated(
                       padding: const EdgeInsets.fromLTRB(24, 12, 24, 120),
-                      itemCount: points.length,
-                      separatorBuilder: (context, index) =>
-                          const SizedBox(height: 14),
+                      itemCount: puntos.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 14),
                       itemBuilder: (context, index) {
-                        final point = points[index];
-                        final isDiscovered = point['discovered'] == true;
-
+                        final punto = puntos[index];
                         return _PointTile(
-                          point: point,
-                          isDiscovered: isDiscovered,
+                          punto: punto,
                           onTap: () {
-                            if (!isDiscovered) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text(
-                                    'Este punto aun no ha sido descubierto.',
-                                  ),
-                                ),
-                              );
-                              return;
-                            }
-
                             Navigator.of(context).push(
                               MaterialPageRoute(
                                 builder: (_) => PoiDetailView(
                                   categoryName: categoryName,
-                                  pointName: point['name'] as String,
-                                  pointDescription:
-                                      point['description'] as String? ?? '',
-                                  imageUrl: point['imageUrl'] as String?,
+                                  pointName: punto.nombre,
+                                  pointDescription: punto.descripcion ?? '',
+                                  imageUrl: punto.mainImageUrl,
                                 ),
                               ),
                             );
@@ -167,15 +150,10 @@ class CategoryPointsView extends StatelessWidget {
 }
 
 class _PointTile extends StatelessWidget {
-  final Map<String, dynamic> point;
-  final bool isDiscovered;
+  final PuntoDeInteres punto;
   final VoidCallback onTap;
 
-  const _PointTile({
-    required this.point,
-    required this.isDiscovered,
-    required this.onTap,
-  });
+  const _PointTile({required this.punto, required this.onTap});
 
   static const Color _secondaryMain = Color(0xFF37C8BE);
   static const Color _neutralSurface = Color(0xFFF7F8FB);
@@ -192,9 +170,7 @@ class _PointTile extends StatelessWidget {
         onTap: onTap,
         child: Container(
           decoration: BoxDecoration(
-            color: isDiscovered
-                ? _neutralSurface
-                : _neutralSurface.withValues(alpha: 0.85),
+            color: _neutralSurface,
             borderRadius: BorderRadius.circular(18),
             border: Border.all(color: _neutralBorder, width: 1.4),
           ),
@@ -204,10 +180,7 @@ class _PointTile extends StatelessWidget {
               SizedBox(
                 height: 120,
                 width: double.infinity,
-                child: _PointImage(
-                  url: point['imageUrl'] as String?,
-                  isDiscovered: isDiscovered,
-                ),
+                child: _PointImage(url: punto.mainImageUrl),
               ),
               Padding(
                 padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
@@ -215,21 +188,19 @@ class _PointTile extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      point['name'] as String,
+                      punto.nombre,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: isDiscovered
-                            ? _neutralTextPrimary
-                            : _neutralTextSecondary,
+                      style: const TextStyle(
+                        color: _neutralTextPrimary,
                         fontSize: 16,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      point['shortDescription'] as String? ?? '',
-                      maxLines: 2,
+                      punto.campus,
+                      maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
                         color: _neutralTextSecondary,
@@ -242,21 +213,17 @@ class _PointTile extends StatelessWidget {
                     Row(
                       children: [
                         Icon(
-                          isDiscovered
+                          punto.visitado
                               ? Icons.check_circle_rounded
-                              : Icons.lock_rounded,
-                          color: isDiscovered
-                              ? _secondaryMain
-                              : _neutralTextSecondary,
+                              : Icons.radio_button_unchecked_rounded,
+                          color: punto.visitado ? _secondaryMain : _neutralTextSecondary,
                           size: 16,
                         ),
                         const SizedBox(width: 6),
                         Text(
-                          isDiscovered ? 'Descubierto' : 'No descubierto',
+                          punto.visitado ? 'Descubierto' : 'No descubierto',
                           style: TextStyle(
-                            color: isDiscovered
-                                ? _secondaryMain
-                                : _neutralTextSecondary,
+                            color: punto.visitado ? _secondaryMain : _neutralTextSecondary,
                             fontSize: 12,
                             fontWeight: FontWeight.w700,
                           ),
@@ -276,67 +243,26 @@ class _PointTile extends StatelessWidget {
 
 class _PointImage extends StatelessWidget {
   final String? url;
-  final bool isDiscovered;
-
-  const _PointImage({this.url, required this.isDiscovered});
+  const _PointImage({this.url});
 
   @override
   Widget build(BuildContext context) {
     if (url != null && url!.isNotEmpty) {
-      final Widget baseImage = url!.startsWith('http')
-          ? Image.network(
-              url!,
-              fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) => _placeholder(),
-            )
-          : Image.asset(
-              url!,
-              fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) => _placeholder(),
-            );
-
-      final image = ClipRRect(
+      return ClipRRect(
         borderRadius: const BorderRadius.vertical(top: Radius.circular(17)),
-        child: baseImage,
-      );
-
-      if (isDiscovered) {
-        return image;
-      }
-
-      return ColorFiltered(
-        colorFilter: const ColorFilter.matrix(<double>[
-          0.2126,
-          0.7152,
-          0.0722,
-          0,
-          0,
-          0.2126,
-          0.7152,
-          0.0722,
-          0,
-          0,
-          0.2126,
-          0.7152,
-          0.0722,
-          0,
-          0,
-          0,
-          0,
-          0,
-          1,
-          0,
-        ]),
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            image,
-            Container(color: Colors.black.withValues(alpha: 0.18)),
-          ],
-        ),
+        child: url!.startsWith('http')
+            ? Image.network(
+                url!,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => _placeholder(),
+              )
+            : Image.asset(
+                url!,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => _placeholder(),
+              ),
       );
     }
-
     return _placeholder();
   }
 

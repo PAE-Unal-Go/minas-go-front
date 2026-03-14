@@ -45,5 +45,9 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Tu ubicación es necesaria para mostrarte en el mapa y ayudarte a explorar.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>Tu ubicación es necesaria para mostrarte en el mapa y ayudarte a explorar.</string>
 </dict>
 </plist>

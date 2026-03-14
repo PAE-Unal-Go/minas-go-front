@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:minasgo_frontend/features/map/presentation/screens/map_screen.dart';
 
 class ExploreFab extends StatelessWidget {
   final VoidCallback? onTap;
@@ -14,10 +15,8 @@ class ExploreFab extends StatelessWidget {
       onTap:
           onTap ??
           () {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Pronto podras iniciar la exploracion en mapa.'),
-              ),
+            Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const MapScreen()),
             );
           },
       child: Container(

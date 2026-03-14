@@ -1,18 +1,28 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
 
 import 'features/home/presentation/screens/home_view.dart';
 import 'features/login/presentation/screens/login_view.dart';
 
-const supabaseUrl = 'https://rsihncxomdrdjiykbcks.supabase.co';
-const supabaseAnonKey =
-    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJzaWhuY3hvbWRyZGppeWtiY2tzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE4MDk2MzAsImV4cCI6MjA4NzM4NTYzMH0.XyUzipfpJMdKy72pZLXFxirXQ1O7ofxrazraFap97eQ';
+const supabaseUrl = String.fromEnvironment('SUPABASE_URL');
+const supabaseAnonKey = String.fromEnvironment('SUPABASE_ANON_KEY');
+
+const _mapboxToken = String.fromEnvironment('MAPBOX_ACCESS_TOKEN');
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // On web, the token is set via mapboxgl.accessToken in index.html.
+  // Calling this on web crashes DDC because mapbox_maps_flutter uses
+  // bool.fromEnvironment non-const internally.
+  if (!kIsWeb) {
+    MapboxOptions.setAccessToken(_mapboxToken);
+  }
 
   await Supabase.initialize(
     url: supabaseUrl,

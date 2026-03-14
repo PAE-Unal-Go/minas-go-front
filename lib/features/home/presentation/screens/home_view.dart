@@ -5,6 +5,11 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'category_points_view.dart';
 import '../widgets/explore_fab.dart';
 import '../widgets/poi_card.dart';
+import '../../../map/data/repositories/map_repository_impl.dart';
+import '../../../map/domain/usecases/get_categorias.dart';
+import '../../../map/domain/usecases/get_puntos_con_visita.dart';
+import '../../../map/domain/entities/categoria.dart';
+import '../../../map/domain/entities/punto_de_interes.dart';
 
 class HomeView extends StatefulWidget {
   const HomeView({super.key});
@@ -25,157 +30,14 @@ class _HomeViewState extends State<HomeView> with TickerProviderStateMixin {
   static const Color _neutralTextPrimary = Color(0xFF091436);
   static const Color _neutralTextSecondary = Color(0xFF6A7587);
 
-  // Mock categories that mirror the intended first release design.
-  final List<Map<String, dynamic>> _mockPois = [
-    {
-      'name': 'Arte y Cultura',
-      'categoryDescription': 'Espacios culturales, murales y puntos historicos',
-      'imageUrl':
-          'assets/images/arte_cultura.jpg',
-      'points': [
-        {
-          'name': 'Esculturas Pedro Nel',
-          'shortDescription': 'Coleccion patrimonial en espacio abierto.',
-          'description':
-              'Protegido por grandes árboles y entre un nacimiento de guadua enclavado en el campus de El Volador, en irónica alusión a los bosques colombianos, se encuentra el Tótem mítico de las selvas, una de las obras escultóricas que el maestro Pedro Nel Gómez produjo exclusivamente para su alma mater, la Universidad Nacional de Colombia Sede Medellín.',
-          'imageUrl':
-              'assets/images/esculturas_pedro.jpg',
-          'discovered': true,
-        },
-        {
-          'name': 'Aula Máxima',
-          'shortDescription': 'Auditorio principal con los frescos de Pedro Nel.',
-          'description':
-              'La cúpula (1949-1953) es un conjunto que abarca 200 metros cuadrados pintados al fresco en la superficie curva. Se concibió para ser observada en movimiento. Es un fenómeno estético en el que mientras el observador deambula, ve la dimensión de todas las composiciones. La obra está dividida en ocho grupos en los cuales se plasmó el milenario espíritu del hombre: Amistad humana, Cooperación humana, La muerte, La vida, Espíritu mítico, Espíritu religioso, Espíritu científico y Las artes. Sus Laterales (1954-1970) están conformados por 6 secciones de 24 metros cuadrados cada una, que dan forma al cilindro del Aula Máxima. Son ellas: La patria, El hombre vence la gravedad, La explosión de la montaña, Choque de dos olas, Explosión de la flora y Los mineros de los organales.',
-          'imageUrl':
-              'assets/images/aula_maxima.jpg',
-          'discovered': true,
-        },
-      ],
-    },
-    {
-      'name': 'Deporte y Salud',
-      'categoryDescription': 'Espacios para actividad fisica y bienestar',
-      'imageUrl':
-            'assets/images/deporte_salud.jpg',
-      'points': [
-        {
-          'name': 'Cancha Multiproposito Facultad de Minas',
-          'shortDescription': 'Zona activa para torneos estudiantiles.',
-          'description':
-              'Area deportiva de uso mixto para entrenamiento y torneos internos. Es uno de los puntos mas concurridos en actividades fisicas universitarias.',
-          'imageUrl':
-              'assets/images/cancha_multiproposito.jpg',
-          'discovered': true,
-        },
-        {
-          'name': 'Canchas de tennis',
-          'shortDescription': 'Zona deportiva para practicar tenis.',
-          'description':
-              'Los estudiantes pueden solicitar el préstamo de las canchas de tenis de campo ubicadas frente al bloque M10, además de inscribirse a las clases para los diferentes niveles.',
-          'imageUrl':
-              'assets/images/canchas_tennis.jpg',
-          'discovered': true,
-        },
-        {
-          'name': 'Gimnasio M10',
-          'shortDescription': 'Instalaciones deportivas para ejercicio y acondicionamiento físico.',
-          'description':
-              'Punto de orientacion para servicios de bienestar universitario, acompanamiento psicosocial y actividades de prevencion.',
-          'imageUrl':
-              'assets/images/deporte_salud.jpg',
-          'discovered': false,
-        },
-      ],
-    },
-    {
-      'name': 'Museos y Laboratorios',
-      'categoryDescription':
-          'Colecciones tecnicas y espacios de experimentacion',
-      'imageUrl':
-          'assets/images/museo_laboratorio.jpg',
-      'points': [
-        {
-          'name': 'Museo de Geociencias',
-          'shortDescription': 'Muestras geologicas de alto valor academico.',
-          'description':
-              'Coleccion de minerales y rocas usada en procesos formativos de geologia, minas y materiales. Incluye piezas historicas de la region.',
-          'imageUrl':
-              'https://images.unsplash.com/photo-1628595351029-c2bf17511435?auto=format&fit=crop&w=900&q=80',
-          'discovered': true,
-        },
-        {
-          'name': 'Laboratorio de Sistemas',
-          'shortDescription': 'Ensayos y caracterizacion de materiales.',
-          'description':
-              'Espacio de analisis para pruebas mecanicas y fisicoquimicas. Permite validar propiedades y comportamiento de materiales en proyectos aplicados.',
-          'imageUrl':
-              'https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?auto=format&fit=crop&w=900&q=80',
-          'discovered': true,
-        },
-        {
-          'name': 'Laboratorio de Hidráulica y Mecánica de Fluidos',
-          'shortDescription': 'Ubicado en el primer piso del Bloque M7 - 101.',
-          'description':
-              'Zona equipada para simulacion numerica y analisis de datos en proyectos de investigacion y docencia.',
-          'imageUrl':
-              'https://images.unsplash.com/photo-1581093458791-9f3c3900df4b?auto=format&fit=crop&w=900&q=80',
-          'discovered': true,
-        },
-      ],
-    },
-    {
-      'name': 'Académico',
-      'categoryDescription': 'Bloques, aulas y zonas de aprendizaje',
-      'imageUrl':
-          'assets/images/academico.jpg',
-      'points': [
-        {
-          'name': 'Sala de estudio M3',
-          'shortDescription': 'Espacio de trabajo colaborativo.',
-          'description':
-              'Bloque con salones para cursos de formacion basica. Cuenta con espacios de trabajo colaborativo y apoyo audiovisual.',
-          'imageUrl':
-              'https://images.unsplash.com/photo-1498243691581-b145c3f54a5a?auto=format&fit=crop&w=900&q=80',
-          'discovered': false,
-        },
-      ],
-    },
-    {
-      'name': 'Medio Ambiente',
-      'categoryDescription': 'Zonas verdes y rutas ecologicas',
-      'imageUrl':
-          'assets/images/medio_ambiente.jpg',
-      'points': [
-        {
-          'name': 'Huerta Unal',
-          'shortDescription': 'Coleccion vegetal local.',
-          'description':
-              'Area de conservacion con especies de flora nativa usada en actividades de educacion ambiental y monitoreo de biodiversidad.',
-          'imageUrl':
-              'https://images.unsplash.com/photo-1466692476868-aef1dfb1e735?auto=format&fit=crop&w=900&q=80',
-          'discovered': false,
-        },
-      ],
-    },
-    {
-      'name': 'Servicios',
-      'categoryDescription': 'Puntos de atencion para la vida universitaria',
-      'imageUrl':
-          'assets/images/servicio.jpg',
-      'points': [
-        {
-          'name': 'Ágora',
-          'shortDescription': 'Zona de comidas pricipal de la sede volador.',
-          'description':
-              'Punto principal para resolver tramites academicos y administrativos, con atencion personalizada para estudiantes.',
-          'imageUrl':
-              'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&w=900&q=80',
-          'discovered': false,
-        },
-      ],
-    },
-  ];
+  final _repo = MapRepositoryImpl();
+  late final GetCategorias _getCategorias;
+  late final GetPuntosConVisita _getPuntosConVisita;
+
+  List<Categoria> _categorias = [];
+  Map<String, List<PuntoDeInteres>> _puntosPorCategoria = {};
+  bool _isLoading = true;
+  String? _error;
 
   @override
   void initState() {
@@ -189,12 +51,47 @@ class _HomeViewState extends State<HomeView> with TickerProviderStateMixin {
       curve: Curves.easeOut,
     );
     _fadeController.forward();
+
+    _getCategorias = GetCategorias(_repo);
+    _getPuntosConVisita = GetPuntosConVisita(_repo);
+
+    _loadData();
   }
 
   @override
   void dispose() {
     _fadeController.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadData() async {
+    try {
+      final userId = Supabase.instance.client.auth.currentUser?.id;
+      final [cats, puntos] = await Future.wait([
+        _getCategorias(userId),
+        _getPuntosConVisita(userId),
+      ]);
+
+      final grouped = <String, List<PuntoDeInteres>>{};
+      for (final p in puntos as List<PuntoDeInteres>) {
+        grouped.putIfAbsent(p.categoria, () => []).add(p);
+      }
+
+      if (mounted) {
+        setState(() {
+          _categorias = cats as List<Categoria>;
+          _puntosPorCategoria = grouped;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _error = e.toString();
+          _isLoading = false;
+        });
+      }
+    }
   }
 
   User? get _currentUser => Supabase.instance.client.auth.currentUser;
@@ -207,19 +104,6 @@ class _HomeViewState extends State<HomeView> with TickerProviderStateMixin {
   String? get _userAvatar {
     final meta = _currentUser?.userMetadata;
     return meta?['avatar_url'] ?? meta?['picture'];
-  }
-
-  //int get _discoveredCount =>
-  //   _mockPois.where((p) => _getUnlockedPoints(p) > 0).length;
-
-  int _getUnlockedPoints(Map<String, dynamic> category) {
-    final points = category['points'] as List<Map<String, dynamic>>;
-    return points.where((point) => point['discovered'] == true).length;
-  }
-
-  int _getTotalPoints(Map<String, dynamic> category) {
-    final points = category['points'] as List<Map<String, dynamic>>;
-    return points.length;
   }
 
   @override
@@ -251,7 +135,7 @@ class _HomeViewState extends State<HomeView> with TickerProviderStateMixin {
                     child: Column(
                       children: [
                         _buildSectionTitle(),
-                        Expanded(child: _buildPoiGrid()),
+                        Expanded(child: _buildBody()),
                       ],
                     ),
                   ),
@@ -264,6 +148,38 @@ class _HomeViewState extends State<HomeView> with TickerProviderStateMixin {
         floatingActionButton: const ExploreFab(),
       ),
     );
+  }
+
+  Widget _buildBody() {
+    if (_isLoading) {
+      return const Center(
+        child: CircularProgressIndicator(color: Color(0xFF171C8F)),
+      );
+    }
+    if (_error != null) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.wifi_off_rounded, size: 48, color: Color(0xFF6A7587)),
+              const SizedBox(height: 12),
+              Text(
+                'Error cargando datos',
+                style: TextStyle(color: _neutralTextPrimary, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 6),
+              TextButton(onPressed: _loadData, child: const Text('Reintentar')),
+            ],
+          ),
+        ),
+      );
+    }
+    if (_categorias.isEmpty) {
+      return const Center(child: Text('No hay categorías disponibles.'));
+    }
+    return _buildPoiGrid();
   }
 
   Widget _buildHeader() {
@@ -296,9 +212,7 @@ class _HomeViewState extends State<HomeView> with TickerProviderStateMixin {
                   : _buildAvatarFallback(),
             ),
           ),
-
           const SizedBox(width: 12),
-
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -317,7 +231,6 @@ class _HomeViewState extends State<HomeView> with TickerProviderStateMixin {
               ],
             ),
           ),
-
           IconButton(
             onPressed: () async {
               await Supabase.instance.client.auth.signOut();
@@ -386,17 +299,16 @@ class _HomeViewState extends State<HomeView> with TickerProviderStateMixin {
         crossAxisSpacing: 14,
         childAspectRatio: 0.78,
       ),
-      itemCount: _mockPois.length,
+      itemCount: _categorias.length,
       itemBuilder: (context, index) {
-        final poi = _mockPois[index];
-        final unlocked = _getUnlockedPoints(poi);
-        final total = _getTotalPoints(poi);
+        final cat = _categorias[index];
+        final puntos = _puntosPorCategoria[cat.key] ?? [];
 
         return PoiCard(
-          name: poi['name'] as String,
-          imageUrl: poi['imageUrl'] as String?,
-          unlockedPoints: unlocked,
-          totalPoints: total,
+          name: cat.nombre,
+          imageUrl: cat.imageUrl,
+          unlockedPoints: cat.visitados,
+          totalPoints: cat.totalPuntos,
           surfaceColor: _neutralSurface,
           borderColor: _neutralBorder,
           progressColor: _secondaryMain,
@@ -406,10 +318,10 @@ class _HomeViewState extends State<HomeView> with TickerProviderStateMixin {
             Navigator.of(context).push(
               MaterialPageRoute(
                 builder: (_) => CategoryPointsView(
-                  categoryName: poi['name'] as String,
-                  categoryDescription: poi['categoryDescription'] as String,
-                  categoryImageUrl: poi['imageUrl'] as String?,
-                  points: poi['points'] as List<Map<String, dynamic>>,
+                  categoryName: cat.nombre,
+                  categoryDescription: _getCategoryDescription(cat.key),
+                  categoryImageUrl: cat.imageUrl,
+                  puntos: puntos,
                 ),
               ),
             );
@@ -417,5 +329,17 @@ class _HomeViewState extends State<HomeView> with TickerProviderStateMixin {
         );
       },
     );
+  }
+
+  String _getCategoryDescription(String key) {
+    const map = {
+      'arte_cultura': 'Espacios culturales, murales y puntos históricos',
+      'deporte_salud': 'Espacios para actividad física y bienestar',
+      'museos_laboratorios': 'Colecciones técnicas y espacios de experimentación',
+      'academico': 'Bloques, aulas y zonas de aprendizaje',
+      'medio_ambiente': 'Zonas verdes y rutas ecológicas',
+      'servicios': 'Puntos de atención para la vida universitaria',
+    };
+    return map[key] ?? 'Puntos de interés del campus';
   }
 }

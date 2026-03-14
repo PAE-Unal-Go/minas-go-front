@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../widgets/google_mark.dart';
 
@@ -92,6 +93,9 @@ class LoginView extends StatelessWidget {
                               redirectTo: kIsWeb
                                   ? Uri.base.origin
                                   : 'io.supabase.minasgo://login-callback/',
+                              authScreenLaunchMode: kIsWeb
+                                  ? LaunchMode.platformDefault
+                                  : LaunchMode.externalApplication,
                             );
                           },
                           style: ElevatedButton.styleFrom(
