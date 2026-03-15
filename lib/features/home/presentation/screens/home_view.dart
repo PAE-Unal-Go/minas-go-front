@@ -307,10 +307,15 @@ class _HomeViewState extends State<HomeView> with TickerProviderStateMixin {
       itemBuilder: (context, index) {
         final cat = _categorias[index];
         final puntos = _puntosPorCategoria[cat.key] ?? [];
+        final cardImageUrl = switch (cat.key) {
+          'arte_cultura' => 'assets/images/aula_maxima.jpg',
+          'academico' => 'assets/images/museo_laboratorio.jpg',
+          _ => cat.imageUrl,
+        };
 
         return PoiCard(
           name: cat.nombre,
-          imageUrl: cat.imageUrl,
+          imageUrl: cardImageUrl,
           unlockedPoints: cat.visitados,
           totalPoints: cat.totalPuntos,
           surfaceColor: AppColors.surface,
