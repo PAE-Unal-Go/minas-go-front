@@ -101,6 +101,12 @@ class _HomeViewState extends State<HomeView> with TickerProviderStateMixin {
     return meta?['full_name'] ?? meta?['name'] ?? 'Explorador';
   }
 
+  String get _firstName {
+    final trimmedName = _userName.trim();
+    if (trimmedName.isEmpty) return 'Explorador';
+    return trimmedName.split(RegExp(r'\s+')).first;
+  }
+
   String? get _userAvatar {
     final meta = _currentUser?.userMetadata;
     return meta?['avatar_url'] ?? meta?['picture'];
@@ -184,7 +190,7 @@ class _HomeViewState extends State<HomeView> with TickerProviderStateMixin {
 
   Widget _buildHeader() {
     return Container(
-      padding: const EdgeInsets.fromLTRB(20, 14, 20, 26),
+      padding: const EdgeInsets.fromLTRB(26, 14, 26, 26),
       child: Row(
         children: [
           Container(
@@ -218,10 +224,10 @@ class _HomeViewState extends State<HomeView> with TickerProviderStateMixin {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  '¡Hola, $_userName!',
+                  '¡Hola, $_firstName!',
                   style: const TextStyle(
                     color: Colors.white,
-                    fontSize: 28,
+                    fontSize: 18,
                     fontWeight: FontWeight.w700,
                     height: 1,
                   ),
@@ -261,15 +267,16 @@ class _HomeViewState extends State<HomeView> with TickerProviderStateMixin {
 
   Widget _buildSectionTitle() {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 14, 24, 8),
+      padding: const EdgeInsets.fromLTRB(26, 26, 26, 8),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           const Text(
             'Explora las diferentes categorías',
+            textAlign: TextAlign.center,
             style: TextStyle(
               color: _neutralTextPrimary,
-              fontSize: 28,
+              fontSize: 18,
               fontWeight: FontWeight.w700,
               height: 1.1,
             ),
@@ -277,9 +284,10 @@ class _HomeViewState extends State<HomeView> with TickerProviderStateMixin {
           const SizedBox(height: 8),
           Text(
             'Cada una tiene una ruta con puntos por descubrir',
+            textAlign: TextAlign.center,
             style: TextStyle(
               color: _neutralTextSecondary,
-              fontSize: 14,
+              fontSize: 12,
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -313,7 +321,6 @@ class _HomeViewState extends State<HomeView> with TickerProviderStateMixin {
           borderColor: _neutralBorder,
           progressColor: _secondaryMain,
           textColor: _neutralTextPrimary,
-          subtitleColor: _neutralTextSecondary,
           onTap: () {
             Navigator.of(context).push(
               MaterialPageRoute(

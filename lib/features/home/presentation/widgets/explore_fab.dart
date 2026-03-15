@@ -7,7 +7,7 @@ class ExploreFab extends StatelessWidget {
   const ExploreFab({super.key, this.onTap});
 
   static const Color _secondaryMain = Color(0xFF37C8BE);
-  static const Color _secondaryDark = Color(0xFF25B7AB);
+  static const Color _primaryDark = Color(0xFF0E147A);
 
   @override
   Widget build(BuildContext context) {
@@ -19,36 +19,64 @@ class ExploreFab extends StatelessWidget {
               MaterialPageRoute(builder: (_) => const MapScreen()),
             );
           },
-      child: Container(
-        width: 78,
-        height: 78,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          gradient: const LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [_secondaryMain, _secondaryDark],
-          ),
-          border: Border.all(color: Colors.white, width: 3),
-          boxShadow: [
-            BoxShadow(
-              color: _secondaryDark.withValues(alpha: 0.45),
-              blurRadius: 16,
-              offset: const Offset(0, 8),
-            ),
-          ],
-        ),
-        child: const Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+      child: SizedBox(
+        width: 92,
+        height: 92,
+        child: Stack(
+          alignment: Alignment.center,
           children: [
-            Icon(Icons.my_location_rounded, color: Colors.white, size: 24),
-            SizedBox(height: 2),
-            Text(
-              'Explorar',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
+            Container(
+              width: 92,
+              height: 92,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: _secondaryMain,
+                boxShadow: [
+                  BoxShadow(
+                    color: _primaryDark.withValues(alpha: 0.35),
+                    blurRadius: 12,
+                    offset: const Offset(0, 5),
+                  ),
+                ],
+              ),
+              child: const ClipOval(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Colors.transparent,
+                        Colors.transparent,
+                        Color(0x4D0E147A),
+                      ],
+                      stops: [0.0, 0.5, 1.0],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            Container(
+              width: 76,
+              height: 76,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: _secondaryMain,
+              ),
+              child: const Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.my_location_rounded, color: Colors.white, size: 24),
+                  SizedBox(height: 4),
+                  Text(
+                    'Explorar',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
               ),
             ),
           ],

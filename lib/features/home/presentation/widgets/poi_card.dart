@@ -9,7 +9,6 @@ class PoiCard extends StatelessWidget {
   final Color borderColor;
   final Color progressColor;
   final Color textColor;
-  final Color subtitleColor;
   final VoidCallback? onTap;
 
   const PoiCard({
@@ -22,7 +21,6 @@ class PoiCard extends StatelessWidget {
     required this.borderColor,
     required this.progressColor,
     required this.textColor,
-    required this.subtitleColor,
     this.onTap,
   });
 
@@ -55,9 +53,9 @@ class PoiCard extends StatelessWidget {
             child: LayoutBuilder(
               builder: (context, constraints) {
                 // Keep visual proportions while adapting to tight grid heights.
-                final double imageHeight = (constraints.maxHeight * 0.58).clamp(
-                  90.0,
+                final double imageHeight = (constraints.maxHeight * 0.72).clamp(
                   120.0,
+                  180.0,
                 );
 
                 return Column(
@@ -72,7 +70,7 @@ class PoiCard extends StatelessWidget {
                       child: Padding(
                         padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
                         child: Column(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          mainAxisAlignment: MainAxisAlignment.start,
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
@@ -85,16 +83,7 @@ class PoiCard extends StatelessWidget {
                                 fontWeight: FontWeight.w700,
                               ),
                             ),
-                            Text(
-                              '$unlockedPoints/$totalPoints puntos desbloqueados',
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                color: subtitleColor,
-                                fontSize: 10,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
+                            const SizedBox(height: 8),
                             ClipRRect(
                               borderRadius: BorderRadius.circular(4),
                               child: SizedBox(
