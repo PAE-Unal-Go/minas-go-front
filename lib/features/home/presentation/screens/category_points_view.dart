@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/theme/app_design_system.dart';
 import '../widgets/explore_fab.dart';
 import '../../../map/domain/entities/punto_de_interes.dart';
 import 'poi_detail_view.dart';
@@ -18,33 +19,19 @@ class CategoryPointsView extends StatelessWidget {
     this.categoryImageUrl,
   });
 
-  static const Color _neutralBackground = Color(0xFFE7E8EE);
-  static const Color _neutralSurface = Color(0xFFF7F8FB);
-  static const Color _primaryMain = Color(0xFF171C8F);
-  static const Color _primaryDark = Color(0xFF10156D);
-  static const Color _secondaryMain = Color(0xFF37C8BE);
-  static const Color _secondaryDark = Color(0xFF25B7AB);
-  static const Color _neutralTextSecondary = Color(0xFF6A7587);
-
   @override
   Widget build(BuildContext context) {
     final discoveredCount = puntos.where((p) => p.visitado).length;
 
     return Scaffold(
-      backgroundColor: _neutralBackground,
+      backgroundColor: AppColors.background,
       body: SafeArea(
         child: Column(
           children: [
             Container(
               width: double.infinity,
               padding: const EdgeInsets.fromLTRB(18, 16, 18, 14),
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [_primaryMain, _primaryDark],
-                ),
-              ),
+              decoration: const BoxDecoration(gradient: AppGradients.primary),
               child: Row(
                 children: [
                   IconButton(
@@ -59,7 +46,7 @@ class CategoryPointsView extends StatelessWidget {
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 30,
-                        fontWeight: FontWeight.w700,
+                        fontWeight: AppTypography.weightBold,
                       ),
                     ),
                   ),
@@ -73,10 +60,10 @@ class CategoryPointsView extends StatelessWidget {
                 width: double.infinity,
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
-                  color: _neutralSurface,
-                  borderRadius: BorderRadius.circular(14),
+                  color: AppColors.surface,
+                  borderRadius: BorderRadius.circular(AppRadius.md),
                   border: Border.all(
-                    color: _secondaryMain.withValues(alpha: 0.5),
+                    color: AppColors.secondaryMain.withValues(alpha: 0.5),
                   ),
                 ),
                 child: Column(
@@ -85,18 +72,18 @@ class CategoryPointsView extends StatelessWidget {
                     Text(
                       categoryDescription,
                       style: const TextStyle(
-                        color: _neutralTextSecondary,
+                        color: AppColors.textSecondary,
                         fontSize: 13,
-                        fontWeight: FontWeight.w500,
+                        fontWeight: AppTypography.weightMedium,
                       ),
                     ),
                     const SizedBox(height: 8),
                     Text(
                       'Descubiertos: $discoveredCount/${puntos.length}',
                       style: const TextStyle(
-                        color: _secondaryDark,
+                        color: AppColors.secondaryDark,
                         fontSize: 13,
-                        fontWeight: FontWeight.w700,
+                        fontWeight: AppTypography.weightBold,
                       ),
                     ),
                   ],
@@ -110,9 +97,9 @@ class CategoryPointsView extends StatelessWidget {
                       child: Text(
                         'No hay puntos configurados para esta categoría.',
                         style: TextStyle(
-                          color: _neutralTextSecondary,
+                          color: AppColors.textSecondary,
                           fontSize: 14,
-                          fontWeight: FontWeight.w600,
+                          fontWeight: AppTypography.weightSemiBold,
                         ),
                       ),
                     )
@@ -155,24 +142,19 @@ class _PointTile extends StatelessWidget {
 
   const _PointTile({required this.punto, required this.onTap});
 
-  static const Color _secondaryMain = Color(0xFF37C8BE);
-  static const Color _neutralSurface = Color(0xFFF7F8FB);
-  static const Color _neutralBorder = Color(0xFF091436);
-  static const Color _neutralTextPrimary = Color(0xFF091436);
-  static const Color _neutralTextSecondary = Color(0xFF6A7587);
-
   @override
   Widget build(BuildContext context) {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(AppRadius.lg),
         onTap: onTap,
         child: Container(
           decoration: BoxDecoration(
-            color: _neutralSurface,
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: _neutralBorder, width: 1.4),
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(AppRadius.lg),
+            border: Border.all(color: AppColors.border, width: 1.4),
+            boxShadow: const [AppShadows.shadowSm],
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -192,9 +174,9 @@ class _PointTile extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
-                        color: _neutralTextPrimary,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
+                        color: AppColors.textPrimary,
+                        fontSize: AppTypography.fontSizeMd,
+                        fontWeight: AppTypography.weightBold,
                       ),
                     ),
                     const SizedBox(height: 6),
@@ -203,9 +185,9 @@ class _PointTile extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
-                        color: _neutralTextSecondary,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
+                        color: AppColors.textSecondary,
+                        fontSize: AppTypography.fontSizeXs,
+                        fontWeight: AppTypography.weightMedium,
                         height: 1.3,
                       ),
                     ),
@@ -216,16 +198,20 @@ class _PointTile extends StatelessWidget {
                           punto.visitado
                               ? Icons.check_circle_rounded
                               : Icons.radio_button_unchecked_rounded,
-                          color: punto.visitado ? _secondaryMain : _neutralTextSecondary,
+                          color: punto.visitado
+                              ? AppColors.stateAvailable
+                              : AppColors.textSecondary,
                           size: 16,
                         ),
                         const SizedBox(width: 6),
                         Text(
                           punto.visitado ? 'Descubierto' : 'No descubierto',
                           style: TextStyle(
-                            color: punto.visitado ? _secondaryMain : _neutralTextSecondary,
+                            color: punto.visitado
+                                ? AppColors.stateAvailable
+                                : AppColors.textSecondary,
                             fontSize: 12,
-                            fontWeight: FontWeight.w700,
+                            fontWeight: AppTypography.weightBold,
                           ),
                         ),
                       ],
@@ -269,11 +255,7 @@ class _PointImage extends StatelessWidget {
   Widget _placeholder() {
     return const DecoratedBox(
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFF2A34D6), Color(0xFF171C8F)],
-        ),
+        gradient: AppGradients.primary,
       ),
       child: Center(
         child: Icon(Icons.image_not_supported_outlined, color: Colors.white),

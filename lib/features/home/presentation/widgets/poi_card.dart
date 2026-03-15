@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/theme/app_design_system.dart';
+
 class PoiCard extends StatelessWidget {
   final String name;
   final String? imageUrl;
@@ -26,30 +28,25 @@ class PoiCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final double progress = totalPoints == 0
-        ? 0
-        : (unlockedPoints / totalPoints).clamp(0, 1);
+    final double progress =
+        totalPoints == 0 ? 0 : (unlockedPoints / totalPoints).clamp(0, 1);
 
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(AppRadius.lg),
         onTap: onTap,
         child: Container(
           decoration: BoxDecoration(
             color: surfaceColor,
-            borderRadius: BorderRadius.circular(18),
+            borderRadius: BorderRadius.circular(AppRadius.lg),
             border: Border.all(color: borderColor),
             boxShadow: [
-              BoxShadow(
-                color: const Color(0xFF0F1430).withValues(alpha: 0.08),
-                blurRadius: 10,
-                offset: const Offset(0, 2),
-              ),
+              AppShadows.shadowSm,
             ],
           ),
           child: ClipRRect(
-            borderRadius: BorderRadius.circular(18),
+            borderRadius: BorderRadius.circular(AppRadius.lg),
             child: LayoutBuilder(
               builder: (context, constraints) {
                 // Keep visual proportions while adapting to tight grid heights.
@@ -68,7 +65,12 @@ class PoiCard extends StatelessWidget {
                     ),
                     Expanded(
                       child: Padding(
-                        padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+                        padding: const EdgeInsets.fromLTRB(
+                          AppSpacing.s3,
+                          10,
+                          AppSpacing.s3,
+                          10,
+                        ),
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.start,
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -79,13 +81,14 @@ class PoiCard extends StatelessWidget {
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(
                                 color: textColor,
-                                fontSize: 16,
-                                fontWeight: FontWeight.w700,
+                                fontSize: AppTypography.fontSizeMd,
+                                fontWeight: AppTypography.weightBold,
                               ),
                             ),
-                            const SizedBox(height: 8),
+                            const SizedBox(height: AppSpacing.s2),
                             ClipRRect(
-                              borderRadius: BorderRadius.circular(4),
+                              borderRadius:
+                                  BorderRadius.circular(AppSpacing.s1),
                               child: SizedBox(
                                 height: 7,
                                 child: Stack(
@@ -135,11 +138,7 @@ class PoiCard extends StatelessWidget {
   Widget _buildPlaceholder() {
     return DecoratedBox(
       decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFF2A34D6), Color(0xFF171C8F)],
-        ),
+        gradient: AppGradients.primary,
       ),
       child: Center(
         child: Icon(

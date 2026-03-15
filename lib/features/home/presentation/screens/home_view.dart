@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../../../core/theme/app_design_system.dart';
 import 'category_points_view.dart';
 import '../widgets/explore_fab.dart';
 import '../widgets/poi_card.dart';
@@ -21,14 +22,6 @@ class HomeView extends StatefulWidget {
 class _HomeViewState extends State<HomeView> with TickerProviderStateMixin {
   late final AnimationController _fadeController;
   late final Animation<double> _fadeAnimation;
-
-  static const Color _primaryMain = Color(0xFF171C8F);
-  static const Color _secondaryMain = Color(0xFF37C8BE);
-  static const Color _neutralBackground = Color(0xFFE7E8EE);
-  static const Color _neutralSurface = Color(0xFFF7F8FB);
-  static const Color _neutralBorder = Color(0xFFD2D6DF);
-  static const Color _neutralTextPrimary = Color(0xFF091436);
-  static const Color _neutralTextSecondary = Color(0xFF6A7587);
 
   final _repo = MapRepositoryImpl();
   late final GetCategorias _getCategorias;
@@ -121,7 +114,7 @@ class _HomeViewState extends State<HomeView> with TickerProviderStateMixin {
         statusBarBrightness: Brightness.dark,
       ),
       child: Scaffold(
-        backgroundColor: _primaryMain,
+        backgroundColor: AppColors.primaryMain,
         body: FadeTransition(
           opacity: _fadeAnimation,
           child: SafeArea(
@@ -133,9 +126,9 @@ class _HomeViewState extends State<HomeView> with TickerProviderStateMixin {
                   child: Container(
                     width: double.infinity,
                     decoration: const BoxDecoration(
-                      color: _neutralBackground,
+                      color: AppColors.background,
                       borderRadius: BorderRadius.vertical(
-                        top: Radius.circular(32),
+                        top: Radius.circular(AppRadius.xl),
                       ),
                     ),
                     child: Column(
@@ -159,21 +152,28 @@ class _HomeViewState extends State<HomeView> with TickerProviderStateMixin {
   Widget _buildBody() {
     if (_isLoading) {
       return const Center(
-        child: CircularProgressIndicator(color: Color(0xFF171C8F)),
+        child: CircularProgressIndicator(color: AppColors.primaryMain),
       );
     }
     if (_error != null) {
       return Center(
         child: Padding(
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.all(AppSpacing.s5),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.wifi_off_rounded, size: 48, color: Color(0xFF6A7587)),
-              const SizedBox(height: 12),
+              const Icon(
+                Icons.wifi_off_rounded,
+                size: AppSpacing.s7,
+                color: AppColors.textSecondary,
+              ),
+              const SizedBox(height: AppSpacing.s3),
               Text(
                 'Error cargando datos',
-                style: TextStyle(color: _neutralTextPrimary, fontWeight: FontWeight.bold),
+                style: const TextStyle(
+                  color: AppColors.textPrimary,
+                  fontWeight: AppTypography.weightBold,
+                ),
               ),
               const SizedBox(height: 6),
               TextButton(onPressed: _loadData, child: const Text('Reintentar')),
@@ -198,13 +198,9 @@ class _HomeViewState extends State<HomeView> with TickerProviderStateMixin {
             height: 48,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: const Color(0xFFFFC84E),
+              color: AppColors.secondaryLight,
               boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.2),
-                  blurRadius: 10,
-                  offset: const Offset(0, 3),
-                ),
+                AppShadows.shadowSm,
               ],
             ),
             child: ClipOval(
@@ -227,8 +223,8 @@ class _HomeViewState extends State<HomeView> with TickerProviderStateMixin {
                   '¡Hola, $_firstName!',
                   style: const TextStyle(
                     color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
+                    fontSize: AppTypography.fontSizeLg,
+                    fontWeight: AppTypography.weightBold,
                     height: 1,
                   ),
                   maxLines: 1,
@@ -251,14 +247,14 @@ class _HomeViewState extends State<HomeView> with TickerProviderStateMixin {
 
   Widget _buildAvatarFallback() {
     return Container(
-      color: const Color(0xFFFFC84E),
+      color: AppColors.secondaryLight,
       child: Center(
         child: Text(
           _userName.isNotEmpty ? _userName[0].toUpperCase() : 'U',
           style: const TextStyle(
-            color: _neutralTextPrimary,
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
+            color: AppColors.textPrimary,
+            fontSize: AppTypography.fontSizeLg,
+            fontWeight: AppTypography.weightBold,
           ),
         ),
       ),
@@ -275,20 +271,20 @@ class _HomeViewState extends State<HomeView> with TickerProviderStateMixin {
             'Explora las diferentes categorías',
             textAlign: TextAlign.center,
             style: TextStyle(
-              color: _neutralTextPrimary,
-              fontSize: 18,
-              fontWeight: FontWeight.w700,
+              color: AppColors.textPrimary,
+              fontSize: AppTypography.fontSizeLg,
+              fontWeight: AppTypography.weightBold,
               height: 1.1,
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: AppSpacing.s2),
           Text(
             'Cada una tiene una ruta con puntos por descubrir',
             textAlign: TextAlign.center,
             style: TextStyle(
-              color: _neutralTextSecondary,
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
+              color: AppColors.textSecondary,
+              fontSize: AppTypography.fontSizeXs,
+              fontWeight: AppTypography.weightMedium,
             ),
           ),
           const SizedBox(height: 6),
@@ -317,10 +313,10 @@ class _HomeViewState extends State<HomeView> with TickerProviderStateMixin {
           imageUrl: cat.imageUrl,
           unlockedPoints: cat.visitados,
           totalPoints: cat.totalPuntos,
-          surfaceColor: _neutralSurface,
-          borderColor: _neutralBorder,
-          progressColor: _secondaryMain,
-          textColor: _neutralTextPrimary,
+          surfaceColor: AppColors.surface,
+          borderColor: AppColors.border,
+          progressColor: AppColors.secondaryMain,
+          textColor: AppColors.textPrimary,
           onTap: () {
             Navigator.of(context).push(
               MaterialPageRoute(
@@ -342,7 +338,8 @@ class _HomeViewState extends State<HomeView> with TickerProviderStateMixin {
     const map = {
       'arte_cultura': 'Espacios culturales, murales y puntos históricos',
       'deporte_salud': 'Espacios para actividad física y bienestar',
-      'museos_laboratorios': 'Colecciones técnicas y espacios de experimentación',
+      'museos_laboratorios':
+          'Colecciones técnicas y espacios de experimentación',
       'academico': 'Bloques, aulas y zonas de aprendizaje',
       'medio_ambiente': 'Zonas verdes y rutas ecológicas',
       'servicios': 'Puntos de atención para la vida universitaria',

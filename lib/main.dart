@@ -2,10 +2,10 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
 
+import 'core/theme/app_design_system.dart';
 import 'features/home/presentation/screens/home_view.dart';
 import 'features/login/presentation/screens/login_view.dart';
 
@@ -78,9 +78,7 @@ class _MainAppState extends State<MainApp> {
     return MaterialApp(
       navigatorKey: _navigatorKey,
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        textTheme: GoogleFonts.poppinsTextTheme(),
-      ),
+      theme: AppTheme.light(),
       home: session != null ? const HomeView() : const LoginView(),
     );
   }
