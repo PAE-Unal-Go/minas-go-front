@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 
 import '../../../../core/theme/app_design_system.dart';
@@ -5,7 +7,7 @@ import '../widgets/explore_fab.dart';
 import '../../../map/domain/entities/punto_de_interes.dart';
 import 'poi_detail_view.dart';
 
-class CategoryPointsView extends StatelessWidget {
+class CategoryPointsView extends StatefulWidget {
   final String categoryName;
   final String categoryDescription;
   final String? categoryImageUrl;
@@ -20,102 +22,75 @@ class CategoryPointsView extends StatelessWidget {
   });
 
   @override
+  State<CategoryPointsView> createState() => _CategoryPointsViewState();
+}
+
+class _CategoryPointsViewState extends State<CategoryPointsView> {
+  static const double _collapseThreshold = 16;
+  bool _isSummaryCollapsed = false;
+
+  bool _onScrollNotification(ScrollNotification notification) {
+    if (notification.metrics.axis != Axis.vertical) return false;
+
+    final shouldCollapse = notification.metrics.pixels > _collapseThreshold;
+    if (shouldCollapse != _isSummaryCollapsed) {
+      setState(() {
+        _isSummaryCollapsed = shouldCollapse;
+      });
+    }
+    return false;
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final discoveredCount = puntos.where((p) => p.visitado).length;
+    final discoveredCount = widget.puntos.where((p) => p.visitado).length;
+    final progress =
+        widget.puntos.isEmpty ? 0.0 : discoveredCount / widget.puntos.length;
+    final topInset = MediaQuery.paddingOf(context).top;
 
     return Scaffold(
-      backgroundColor: AppColors.background,
-      body: SafeArea(
-        child: Column(
-          children: [
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.fromLTRB(18, 16, 18, 14),
-              decoration: const BoxDecoration(gradient: AppGradients.primary),
-              child: Row(
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.arrow_back_ios_new_rounded),
-                    color: Colors.white,
-                    onPressed: () => Navigator.of(context).pop(),
-                  ),
-                  Expanded(
+      backgroundColor: AppColors.primaryMain,
+      body: Column(
+        children: [
+          _buildHeader(context, progress, topInset),
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 180),
+            curve: Curves.easeOut,
+            height: _isSummaryCollapsed ? 4 : 44,
+          ),
+          Expanded(
+            child: widget.puntos.isEmpty
+                ? Center(
                     child: Text(
-                      categoryName,
-                      textAlign: TextAlign.center,
+                      'No hay puntos configurados para esta categoría.',
                       style: const TextStyle(
                         color: Colors.white,
-                        fontSize: 30,
-                        fontWeight: AppTypography.weightBold,
+                        fontSize: AppTypography.fontSizeSm,
+                        fontWeight: AppTypography.weightSemiBold,
                       ),
                     ),
-                  ),
-                  const SizedBox(width: 44),
-                ],
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(24, 14, 24, 0),
-              child: Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: AppColors.surface,
-                  borderRadius: BorderRadius.circular(AppRadius.md),
-                  border: Border.all(
-                    color: AppColors.secondaryMain.withValues(alpha: 0.5),
-                  ),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      categoryDescription,
-                      style: const TextStyle(
-                        color: AppColors.textSecondary,
-                        fontSize: 13,
-                        fontWeight: AppTypography.weightMedium,
+                  )
+                : NotificationListener<ScrollNotification>(
+                    onNotification: _onScrollNotification,
+                    child: GridView.builder(
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 120),
+                      gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 3,
+                        mainAxisSpacing: 12,
+                        crossAxisSpacing: 12,
+                        childAspectRatio: 0.86,
                       ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Descubiertos: $discoveredCount/${puntos.length}',
-                      style: const TextStyle(
-                        color: AppColors.secondaryDark,
-                        fontSize: 13,
-                        fontWeight: AppTypography.weightBold,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 18),
-            Expanded(
-              child: puntos.isEmpty
-                  ? const Center(
-                      child: Text(
-                        'No hay puntos configurados para esta categoría.',
-                        style: TextStyle(
-                          color: AppColors.textSecondary,
-                          fontSize: 14,
-                          fontWeight: AppTypography.weightSemiBold,
-                        ),
-                      ),
-                    )
-                  : ListView.separated(
-                      padding: const EdgeInsets.fromLTRB(24, 12, 24, 120),
-                      itemCount: puntos.length,
-                      separatorBuilder: (_, __) => const SizedBox(height: 14),
+                      itemCount: widget.puntos.length,
                       itemBuilder: (context, index) {
-                        final punto = puntos[index];
-                        return _PointTile(
+                        final punto = widget.puntos[index];
+                        return _PointGridTile(
                           punto: punto,
                           onTap: () {
                             Navigator.of(context).push(
                               MaterialPageRoute(
                                 builder: (_) => PoiDetailView(
-                                  categoryName: categoryName,
+                                  categoryName: widget.categoryName,
                                   pointName: punto.nombre,
                                   pointDescription: punto.descripcion ?? '',
                                   imageUrl: punto.mainImageUrl,
@@ -126,97 +101,289 @@ class CategoryPointsView extends StatelessWidget {
                         );
                       },
                     ),
-            ),
-          ],
-        ),
+                  ),
+          ),
+        ],
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
       floatingActionButton: const ExploreFab(),
     );
   }
+
+  Widget _buildHeader(
+    BuildContext context,
+    double progress,
+    double topInset,
+  ) {
+    return SizedBox(
+      height: 320 + topInset,
+      width: double.infinity,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Positioned.fill(child: _buildHeaderBackground()),
+          Positioned(
+            top: topInset + 10,
+            left: 16,
+            right: 16,
+            child: Row(
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.arrow_back_ios_new_rounded),
+                  color: Colors.white,
+                  onPressed: () => Navigator.of(context).pop(),
+                ),
+                Expanded(
+                  child: Text(
+                    widget.categoryName,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 24,
+                      fontWeight: AppTypography.weightBold,
+                      height: 1.05,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          AnimatedPositioned(
+            duration: const Duration(milliseconds: 180),
+            curve: Curves.easeOut,
+            left: 12,
+            right: 12,
+            bottom: _isSummaryCollapsed ? 78 : -28,
+            child: _buildSummaryCard(progress, _isSummaryCollapsed),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHeaderBackground() {
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        ClipRect(
+          child: Transform.scale(
+            scale: 1.02,
+            child: ImageFiltered(
+              imageFilter: ImageFilter.blur(sigmaX: 2, sigmaY: 2),
+              child: _buildHeaderImage(),
+            ),
+          ),
+        ),
+        DecoratedBox(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                Colors.black.withValues(alpha: 0.20),
+                Colors.black.withValues(alpha: 0.35),
+                AppColors.primaryMain,
+                AppColors.primaryMain,
+              ],
+              stops: const [0.0, 0.55, 0.9, 1.0],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildHeaderImage() {
+    if (widget.categoryImageUrl != null &&
+        widget.categoryImageUrl!.isNotEmpty) {
+      if (widget.categoryImageUrl!.startsWith('http')) {
+        return Image.network(
+          widget.categoryImageUrl!,
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) => _buildHeaderPlaceholder(),
+        );
+      }
+      return Image.asset(
+        widget.categoryImageUrl!,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => _buildHeaderPlaceholder(),
+      );
+    }
+    return _buildHeaderPlaceholder();
+  }
+
+  Widget _buildHeaderPlaceholder() {
+    return const DecoratedBox(
+      decoration: BoxDecoration(gradient: AppGradients.exploration),
+    );
+  }
+
+  Widget _buildSummaryCard(double progress, bool isCollapsed) {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 180),
+      curve: Curves.easeOut,
+      padding: EdgeInsets.fromLTRB(20, isCollapsed ? 12 : 20, 20, 12),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(28),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0x1F0F172A),
+            blurRadius: 22,
+            spreadRadius: -8,
+            offset: const Offset(0, 12),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          AnimatedSwitcher(
+            duration: const Duration(milliseconds: 180),
+            child: isCollapsed
+                ? const SizedBox.shrink()
+                : Text(
+                    widget.categoryDescription,
+                    key: const ValueKey('summary-description'),
+                    style: const TextStyle(
+                      color: AppColors.textPrimary,
+                      fontSize: AppTypography.fontSizeXs,
+                      fontWeight: AppTypography.weightMedium,
+                      height: 1.35,
+                    ),
+                  ),
+          ),
+          AnimatedSwitcher(
+            duration: const Duration(milliseconds: 180),
+            child: isCollapsed
+                ? const SizedBox.shrink()
+                : const SizedBox(
+                    key: ValueKey('summary-spacing'),
+                    height: 8,
+                  ),
+          ),
+          Align(
+            alignment: Alignment.centerRight,
+            child: Text(
+              '${(progress * 100).round()}%',
+              style: const TextStyle(
+                color: AppColors.textSecondary,
+                fontSize: 10,
+                fontWeight: AppTypography.weightMedium,
+              ),
+            ),
+          ),
+          const SizedBox(height: 4),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(AppRadius.pill),
+            child: SizedBox(
+              height: 14,
+              child: Stack(
+                children: [
+                  Container(color: AppColors.stateLocked),
+                  FractionallySizedBox(
+                    widthFactor: progress.clamp(0.0, 1.0),
+                    child: Container(color: AppColors.stateAvailable),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          SizedBox(height: isCollapsed ? 10 : 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: const [
+              _LegendDot(color: AppColors.stateAvailable, label: 'Descubierto'),
+              SizedBox(width: 36),
+              _LegendDot(color: AppColors.stateLocked, label: 'Bloqueado'),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
 }
 
-class _PointTile extends StatelessWidget {
+class _LegendDot extends StatelessWidget {
+  final Color color;
+  final String label;
+
+  const _LegendDot({required this.color, required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Container(
+          width: 14,
+          height: 14,
+          decoration: BoxDecoration(
+            color: color,
+            shape: BoxShape.circle,
+            boxShadow: const [AppShadows.shadowSm],
+          ),
+        ),
+        const SizedBox(width: 8),
+        Text(
+          label,
+          style: const TextStyle(
+            color: AppColors.textPrimary,
+            fontSize: AppTypography.fontSizeXs,
+            fontWeight: AppTypography.weightMedium,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _PointGridTile extends StatelessWidget {
   final PuntoDeInteres punto;
   final VoidCallback onTap;
 
-  const _PointTile({required this.punto, required this.onTap});
+  const _PointGridTile({required this.punto, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        borderRadius: BorderRadius.circular(AppRadius.lg),
+        borderRadius: BorderRadius.circular(AppRadius.md),
         onTap: onTap,
         child: Container(
           decoration: BoxDecoration(
             color: AppColors.surface,
-            borderRadius: BorderRadius.circular(AppRadius.lg),
-            border: Border.all(color: AppColors.border, width: 1.4),
+            borderRadius: BorderRadius.circular(AppRadius.md),
             boxShadow: const [AppShadows.shadowSm],
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              SizedBox(
-                height: 120,
-                width: double.infinity,
-                child: _PointImage(url: punto.mainImageUrl),
+              ClipRRect(
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(AppRadius.md),
+                ),
+                child: SizedBox(
+                  height: 88,
+                  width: double.infinity,
+                  child: _PointImage(url: punto.mainImageUrl),
+                ),
               ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      punto.nombre,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: AppColors.textPrimary,
-                        fontSize: AppTypography.fontSizeMd,
-                        fontWeight: AppTypography.weightBold,
-                      ),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(8, 6, 8, 6),
+                  child: Text(
+                    punto.nombre,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: AppColors.textPrimary,
+                      fontSize: 11,
+                      fontWeight: AppTypography.weightMedium,
+                      height: 1.2,
                     ),
-                    const SizedBox(height: 6),
-                    Text(
-                      punto.campus,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: AppColors.textSecondary,
-                        fontSize: AppTypography.fontSizeXs,
-                        fontWeight: AppTypography.weightMedium,
-                        height: 1.3,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        Icon(
-                          punto.visitado
-                              ? Icons.check_circle_rounded
-                              : Icons.radio_button_unchecked_rounded,
-                          color: punto.visitado
-                              ? AppColors.stateAvailable
-                              : AppColors.textSecondary,
-                          size: 16,
-                        ),
-                        const SizedBox(width: 6),
-                        Text(
-                          punto.visitado ? 'Descubierto' : 'No descubierto',
-                          style: TextStyle(
-                            color: punto.visitado
-                                ? AppColors.stateAvailable
-                                : AppColors.textSecondary,
-                            fontSize: 12,
-                            fontWeight: AppTypography.weightBold,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
+                  ),
                 ),
               ),
             ],
@@ -234,20 +401,17 @@ class _PointImage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (url != null && url!.isNotEmpty) {
-      return ClipRRect(
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(17)),
-        child: url!.startsWith('http')
-            ? Image.network(
-                url!,
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => _placeholder(),
-              )
-            : Image.asset(
-                url!,
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => _placeholder(),
-              ),
-      );
+      return url!.startsWith('http')
+          ? Image.network(
+              url!,
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => _placeholder(),
+            )
+          : Image.asset(
+              url!,
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => _placeholder(),
+            );
     }
     return _placeholder();
   }

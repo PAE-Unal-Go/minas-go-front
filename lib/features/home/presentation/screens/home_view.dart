@@ -328,7 +328,7 @@ class _HomeViewState extends State<HomeView> with TickerProviderStateMixin {
                 builder: (_) => CategoryPointsView(
                   categoryName: cat.nombre,
                   categoryDescription: _getCategoryDescription(cat.key),
-                  categoryImageUrl: cat.imageUrl,
+                  categoryImageUrl: cardImageUrl,
                   puntos: puntos,
                 ),
               ),
@@ -341,13 +341,18 @@ class _HomeViewState extends State<HomeView> with TickerProviderStateMixin {
 
   String _getCategoryDescription(String key) {
     const map = {
-      'arte_cultura': 'Espacios culturales, murales y puntos históricos',
-      'deporte_salud': 'Espacios para actividad física y bienestar',
+      'arte_cultura':
+          'Explora los espacios donde el arte y la creatividad hacen parte de la vida universitaria. Descubre salas de exhibición, auditorios, murales, esculturas y lugares donde estudiantes y artistas comparten sus obras y expresiones culturales.',
+      'deporte_salud':
+          'Recorre los espacios dedicados al bienestar físico y mental de la comunidad universitaria. Encuentra canchas, zonas deportivas y actividades que promueven el deporte, la actividad física y la vida saludable dentro del campus.',
       'museos_laboratorios':
-          'Colecciones técnicas y espacios de experimentación',
-      'academico': 'Bloques, aulas y zonas de aprendizaje',
-      'medio_ambiente': 'Zonas verdes y rutas ecológicas',
-      'servicios': 'Puntos de atención para la vida universitaria',
+          'Descubre los espacios donde se genera conocimiento e innovación. Visita laboratorios, centros de investigación y lugares donde estudiantes y científicos desarrollan experimentos, proyectos y nuevas tecnologías.',
+      'academico':
+          'Conoce los lugares donde se desarrolla la formación académica de la universidad. Explora facultades, aulas, auditorios y bibliotecas donde miles de estudiantes construyen conocimiento en diferentes áreas del saber.',
+      'medio_ambiente':
+          'La sede Medellín se caracteriza por su riqueza natural y espacios verdes. Recorre jardines, zonas ecológicas y áreas naturales del campus donde la biodiversidad y el cuidado ambiental hacen parte de la experiencia universitaria.',
+      'servicios':
+          'Descubre los lugares que hacen posible el funcionamiento del campus. Encuentra transporte interno, cafeterías, espacios administrativos y servicios que apoyan la vida diaria de estudiantes, profesores y visitantes.',
     };
     return map[key] ?? 'Puntos de interés del campus';
   }

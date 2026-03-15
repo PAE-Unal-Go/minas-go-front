@@ -1,6 +1,6 @@
 class Categoria {
-  final String key;       // e.g. "arte_cultura"
-  final String nombre;    // e.g. "Arte y Cultura"
+  final String key;     
+  final String nombre;   
   final String? imageUrl;
   final int totalPuntos;
   final int visitados;
@@ -13,7 +13,6 @@ class Categoria {
     required this.visitados,
   });
 
-  /// Maps DB enum-style keys like "arte_cultura" to human-readable names.
   static String humanNombre(String key) {
     const map = {
       'arte_cultura': 'Arte y Cultura',
