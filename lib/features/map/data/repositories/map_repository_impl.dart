@@ -56,16 +56,6 @@ class MapRepositoryImpl implements MapRepository {
   Future<List<PuntoDeInteres>> getPuntosConVisita(String? userId) async {
     try {
       if (userId != null) {
-        // For each row, visitado reflects if this specific user visited.
-        // We need to filter by usuario_id for correct visitado value.
-        // We use a subquery-style: get all puntos joined for this user.
-        // The view has puntos * usuario_id from visitas join, so if we filter
-        // by usuario_id we get only rows where they visited (visitado=true).
-        // To get ALL puntos with correct visitado flag for a user, we need
-        // a different approach: call the raw table instead.
-        //
-        // Workaround: fetch all puntos, fetch visitas for this user,
-        // then combine client-side.
         final [puntosRes, visitasRes] = await Future.wait([
           _supabase.from('puntos_de_interes').select(),
           _supabase
@@ -102,7 +92,6 @@ class MapRepositoryImpl implements MapRepository {
     try {
       final puntos = await getPuntosConVisita(userId);
 
-      // Group by category key
       final Map<String, List<PuntoDeInteres>> grouped = {};
       for (final p in puntos) {
         grouped.putIfAbsent(p.categoria, () => []).add(p);
@@ -128,6 +117,22 @@ class MapRepositoryImpl implements MapRepository {
         ..sort((a, b) => a.nombre.compareTo(b.nombre));
     } catch (e) {
       return Future.error('Error fetching categories: $e');
+    }
+  }
+
+  @override
+  Future<void> unlockPoi(String userId, int puntoId) async {
+    try {
+      await _supabase.from('visitas').upsert(
+        {
+          'usuario_id': userId,
+          'punto_id': puntoId,
+          'fecha_visita': DateTime.now().toIso8601String(),
+        },
+        onConflict: 'usuario_id,punto_id',
+      );
+    } catch (e) {
+      return Future.error('Error al desbloquear punto: $e');
     }
   }
 }

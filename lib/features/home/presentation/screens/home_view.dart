@@ -11,6 +11,7 @@ import '../../../map/domain/usecases/get_categorias.dart';
 import '../../../map/domain/usecases/get_puntos_con_visita.dart';
 import '../../../map/domain/entities/categoria.dart';
 import '../../../map/domain/entities/punto_de_interes.dart';
+import '../../../../core/services/proximity_service.dart';
 
 class HomeView extends StatefulWidget {
   const HomeView({super.key});
@@ -49,11 +50,18 @@ class _HomeViewState extends State<HomeView> with TickerProviderStateMixin {
     _getPuntosConVisita = GetPuntosConVisita(_repo);
 
     _loadData();
+    ProximityService().addListener(_onProximityStateChange);
+  }
+
+  void _onProximityStateChange() {
+    // Refresh when points might have changed (e.g. after unlock)
+    _loadData(); 
   }
 
   @override
   void dispose() {
     _fadeController.dispose();
+    ProximityService().removeListener(_onProximityStateChange);
     super.dispose();
   }
 

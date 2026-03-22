@@ -7,4 +7,5 @@ abstract class MapRepository {
   Future<String> getPoisGeoJson();
   Future<List<PuntoDeInteres>> getPuntosConVisita(String? userId);
   Future<List<Categoria>> getCategorias(String? userId);
+  Future<void> unlockPoi(String userId, int puntoId);
 }
