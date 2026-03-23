@@ -44,7 +44,8 @@ class _PoiBottomSheetState extends State<PoiBottomSheet> {
     final punto = widget.punto;
     final isVisitado = punto.visitado;
     final locked = !isVisitado && !_inRange;
-    final hasImage = punto.mainImageUrl != null && punto.mainImageUrl!.isNotEmpty;
+    final hasImage =
+        punto.mainImageUrl != null && punto.mainImageUrl!.isNotEmpty;
 
     return Container(
       decoration: const BoxDecoration(
@@ -55,16 +56,18 @@ class _PoiBottomSheetState extends State<PoiBottomSheet> {
         mainAxisSize: MainAxisSize.min,
         children: [
           // ── Handle ──
-          const SizedBox(height: 10),
-          Container(
-            width: 40,
-            height: 4,
-            decoration: BoxDecoration(
-              color: Colors.grey[300],
-              borderRadius: BorderRadius.circular(2),
+          if (!locked) ...[
+            const SizedBox(height: 10),
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey[300],
+                borderRadius: BorderRadius.circular(2),
+              ),
             ),
-          ),
-          const SizedBox(height: 4),
+            const SizedBox(height: 4),
+          ],
 
           // ── Image ──
           _PoiImageSection(
@@ -160,20 +163,61 @@ class _PoiImageSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    const blockedGrayMatrix = [
+      0.2126,
+      0.7152,
+      0.0722,
+      0.0,
+      0.0,
+      0.2126,
+      0.7152,
+      0.0722,
+      0.0,
+      0.0,
+      0.2126,
+      0.7152,
+      0.0722,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      1.0,
+      0.0,
+    ];
+
     return Stack(
       children: [
         SizedBox(
           height: 190,
           width: double.infinity,
           child: ClipRRect(
-            borderRadius: BorderRadius.zero,
+            borderRadius: locked
+                ? const BorderRadius.vertical(top: Radius.circular(28))
+                : BorderRadius.zero,
             child: hasImage
-                ? Image.network(
-                    punto.mainImageUrl!,
-                    fit: BoxFit.cover,
-                    color: locked ? Colors.black.withValues(alpha: 0.55) : null,
-                    colorBlendMode: BlendMode.darken,
-                    errorBuilder: (_, __, ___) => _Placeholder(locked: locked),
+                ? Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      ColorFiltered(
+                        colorFilter: locked
+                            ? const ColorFilter.matrix(blockedGrayMatrix)
+                            : const ColorFilter.mode(
+                                Colors.transparent,
+                                BlendMode.srcOver,
+                              ),
+                        child: Image.network(
+                          punto.mainImageUrl!,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) =>
+                              _Placeholder(locked: locked),
+                        ),
+                      ),
+                      if (locked)
+                        Container(
+                          color: Colors.black.withValues(alpha: 0.78),
+                        ),
+                    ],
                   )
                 : _Placeholder(locked: locked),
           ),
@@ -352,7 +396,7 @@ class _UnlockButton extends StatelessWidget {
               size: 15, color: AppColors.textSecondary),
           const SizedBox(width: 8),
           Text(
-            'Debes estar a ${proximityThresholdMeters.toInt()} m',
+            'Debes estar más cerca',
             style: const TextStyle(
               color: AppColors.textSecondary,
               fontSize: 13,

@@ -4,23 +4,30 @@ import 'package:flutter/services.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
 
 const Map<String, String> categoryIconAssets = {
-  'arte_cultura':        'assets/images/map_points/arteIcon.png',
-  'deporte_salud':       'assets/images/map_points/deporteIcon.png',
+  'arte_cultura': 'assets/images/map_points/arteIcon.png',
+  'deporte_salud': 'assets/images/map_points/deporteIcon.png',
   'museos_laboratorios': 'assets/images/map_points/labsIcon.png',
-  'academico':           'assets/images/map_points/academiaIcon.png',
-  'medio_ambiente':      'assets/images/map_points/naturalezaIcon.png',
-  'servicios':           'assets/images/map_points/serviciosIcon.png',
+  'academico': 'assets/images/map_points/academiaIcon.png',
+  'medio_ambiente': 'assets/images/map_points/naturalezaIcon.png',
+  'servicios': 'assets/images/map_points/serviciosIcon.png',
+  'default': 'assets/images/marker.png',
 };
 
 const int _iconSize = 100;
 
-final Map<String, Uint8List> _cachedRgba = {};
+final Map<String, Uint8List> _cachedPng = {};
+final Map<String, Uint8List> _cachedGrayPng = {};
 
 Future<void> preloadIconBytes() async {
-  if (_cachedRgba.isNotEmpty) return;
+  _cachedPng.clear();
+  _cachedGrayPng.clear();
   for (final entry in categoryIconAssets.entries) {
     try {
-      _cachedRgba[entry.key] = await _loadRawRgba(entry.value);
+      _cachedPng[entry.key] = await _loadResizedPng(entry.value);
+      _cachedGrayPng[entry.key] = await _loadResizedPng(
+        entry.value,
+        grayscale: true,
+      );
       debugPrint('[MapIcons] 📦 Preloaded ${entry.key}');
     } catch (e) {
       debugPrint('[MapIcons] ❌ Preload failed for ${entry.key}: $e');
@@ -28,33 +35,50 @@ Future<void> preloadIconBytes() async {
   }
 }
 
-/// Phase 2 – register pre-decoded buffers into the Mapbox style.
-/// All Mapbox calls happen back-to-back with no async gaps between them,
-/// minimising the window for a style-reload race condition.
+/// Mapbox's addStyleImage expects encoded image bytes (PNG/JPG), not raw RGBA.
 Future<void> registerMapIcons(MapboxMap mapboxMap) async {
-  if (_cachedRgba.isEmpty) await preloadIconBytes();
+  if (_cachedPng.isEmpty || _cachedGrayPng.isEmpty) await preloadIconBytes();
 
   int registered = 0;
-  for (final entry in _cachedRgba.entries) {
+  for (final entry in _cachedPng.entries) {
     try {
       await mapboxMap.style.addStyleImage(
         'icon-${entry.key}',
         1.0,
         MbxImage(width: _iconSize, height: _iconSize, data: entry.value),
-        false, [], [], null,
+        false,
+        [],
+        [],
+        null,
       );
       registered++;
       debugPrint('[MapIcons] ✅ icon-${entry.key}');
+
+      final gray = _cachedGrayPng[entry.key];
+      if (gray != null) {
+        await mapboxMap.style.addStyleImage(
+          'icon-${entry.key}-gray',
+          1.0,
+          MbxImage(width: _iconSize, height: _iconSize, data: gray),
+          false,
+          [],
+          [],
+          null,
+        );
+        registered++;
+        debugPrint('[MapIcons] ✅ icon-${entry.key}-gray');
+      }
     } catch (e) {
       debugPrint('[MapIcons] ❌ register icon-${entry.key}: $e');
     }
   }
-  debugPrint('[MapIcons] Registered $registered/${_cachedRgba.length}');
+  debugPrint('[MapIcons] Registered $registered/${_cachedPng.length * 2}');
 }
 
 // ─────────────────────────────── internal ────────────────────────────────────
 
-Future<Uint8List> _loadRawRgba(String assetPath) async {
+Future<Uint8List> _loadResizedPng(String assetPath,
+    {bool grayscale = false}) async {
   final data = await rootBundle.load(assetPath);
   final codec = await ui.instantiateImageCodec(
     data.buffer.asUint8List(),
@@ -62,9 +86,47 @@ Future<Uint8List> _loadRawRgba(String assetPath) async {
     targetHeight: _iconSize,
   );
   final frame = await codec.getNextFrame();
-  final recorder = ui.PictureRecorder();
-  ui.Canvas(recorder).drawImage(frame.image, ui.Offset.zero, ui.Paint());
-  final img = await recorder.endRecording().toImage(_iconSize, _iconSize);
-  final bd = await img.toByteData(format: ui.ImageByteFormat.rawRgba);
+  ui.Image output = frame.image;
+
+  if (grayscale) {
+    final recorder = ui.PictureRecorder();
+    final canvas = ui.Canvas(recorder);
+    final grayPaint = ui.Paint()
+      ..colorFilter = const ui.ColorFilter.matrix([
+        0.2126,
+        0.7152,
+        0.0722,
+        0,
+        0,
+        0.2126,
+        0.7152,
+        0.0722,
+        0,
+        0,
+        0.2126,
+        0.7152,
+        0.0722,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+      ]);
+    canvas.drawImage(frame.image, ui.Offset.zero, grayPaint);
+
+    // Dark overlay to ensure even white areas look "locked".
+    canvas.drawRect(
+      ui.Rect.fromLTWH(0, 0, _iconSize.toDouble(), _iconSize.toDouble()),
+      ui.Paint()
+        ..color = const ui.Color(0x66000000)
+        ..blendMode = ui.BlendMode.srcATop,
+    );
+
+    output = await recorder.endRecording().toImage(_iconSize, _iconSize);
+  }
+
+  final bd = await output.toByteData(format: ui.ImageByteFormat.png);
   return bd!.buffer.asUint8List();
 }

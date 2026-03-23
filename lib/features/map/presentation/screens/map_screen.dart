@@ -6,7 +6,6 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:vibration/vibration.dart';
 import 'package:audioplayers/audioplayers.dart';
 
-
 import '../../domain/usecases/unlock_poi.dart';
 import '../../domain/entities/punto_de_interes.dart';
 import '../../domain/entities/categoria.dart';
@@ -16,6 +15,7 @@ import 'package:minasgo_frontend/core/services/proximity_service.dart';
 import '../widgets/poi_bottom_sheet.dart';
 import '../widgets/poi_unlock_card.dart';
 import '../widgets/category_dropdown.dart';
+import '../widgets/map_icon_loader.dart';
 import '../widgets/map_layer_helper.dart';
 import '../../../../core/theme/app_design_system.dart';
 
@@ -88,7 +88,12 @@ class _MapScreenState extends State<MapScreen>
     try {
       final userId = Supabase.instance.client.auth.currentUser?.id;
       final cats = await _repo.getCategorias(userId);
-      if (mounted) setState(() { _categorias = cats; _isLoading = false; });
+      if (mounted) {
+        setState(() {
+          _categorias = cats;
+          _isLoading = false;
+        });
+      }
     } catch (_) {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -105,8 +110,8 @@ class _MapScreenState extends State<MapScreen>
         latitude: pos.latitude,
         longitude: pos.longitude,
       );
-      final isNear =
-          _puntos.any((p) => !p.visitado && _distanceTo(p) <= proximityThresholdMeters);
+      final isNear = _puntos.any(
+          (p) => !p.visitado && _distanceTo(p) <= proximityThresholdMeters);
       if (isNear != _isNearAnyUnvisited) {
         _isNearAnyUnvisited = isNear;
         if (_isNearAnyUnvisited) {
@@ -125,7 +130,10 @@ class _MapScreenState extends State<MapScreen>
     _vibrationTimer?.cancel();
     _vibrationTimer =
         Timer.periodic(const Duration(milliseconds: 2000), (timer) async {
-      if (!_isNearAnyUnvisited) { timer.cancel(); return; }
+      if (!_isNearAnyUnvisited) {
+        timer.cancel();
+        return;
+      }
       if ((await Vibration.hasVibrator()) == true) {
         Vibration.vibrate(pattern: [0, 100, 200, 100]);
       }
@@ -137,28 +145,28 @@ class _MapScreenState extends State<MapScreen>
     try {
       final pulse = _pulseController!.value;
       await _mapboxMap?.style.setStyleLayerProperty(
-          'puntos-circles', 'circle-radius',
-          (14.0 + pulse * 4.0).toString());
-      await _mapboxMap?.style.setStyleLayerProperty(
-          'puntos-circles', 'circle-stroke-width',
-          (2.5 + pulse * 1.5).toString());
+          'puntos-circles', 'circle-radius', (5.0 + pulse * 1.6).toString());
+      await _mapboxMap?.style.setStyleLayerProperty('puntos-circles',
+          'circle-stroke-width', (1.1 + pulse * 0.7).toString());
     } catch (_) {}
   }
 
   void _resetPulseLayer() async {
     try {
       await _mapboxMap?.style
-          .setStyleLayerProperty('puntos-circles', 'circle-radius', '14.0');
+          .setStyleLayerProperty('puntos-circles', 'circle-radius', '5.0');
       await _mapboxMap?.style.setStyleLayerProperty(
-          'puntos-circles', 'circle-stroke-width', '2.5');
+          'puntos-circles', 'circle-stroke-width', '1.1');
     } catch (_) {}
   }
 
   double _distanceTo(PuntoDeInteres p) {
     if (_userLocation == null) return double.infinity;
     return geo.Geolocator.distanceBetween(
-      _userLocation!.latitude, _userLocation!.longitude,
-      p.latitud, p.longitud,
+      _userLocation!.latitude,
+      _userLocation!.longitude,
+      p.latitud,
+      p.longitud,
     );
   }
 
@@ -172,30 +180,55 @@ class _MapScreenState extends State<MapScreen>
     _centerMap();
   }
 
-  void _onStyleLoaded(StyleLoadedEventData _) => _loadCircleLayer();
+  void _onStyleLoaded(StyleLoadedEventData _) {
+    _prepareMapStyle();
+  }
+
+  Future<void> _prepareMapStyle() async {
+    if (_mapboxMap == null) return;
+    try {
+      await registerMapIcons(_mapboxMap!);
+      await _loadCircleLayer();
+    } catch (e) {
+      debugPrint('Error preparing map style: $e');
+    }
+  }
 
   Future<void> _loadCircleLayer() async {
     if (_mapboxMap == null) return;
     try {
-      try { await _mapboxMap!.style.removeStyleLayer('puntos-circles'); } catch (_) {}
-      try { await _mapboxMap!.style.removeStyleSource('puntos'); } catch (_) {}
+      try {
+        await _mapboxMap!.style.removeStyleLayer('puntos-symbols');
+      } catch (_) {}
+      try {
+        await _mapboxMap!.style.removeStyleLayer('puntos-circles');
+      } catch (_) {}
+      try {
+        await _mapboxMap!.style.removeStyleSource('puntos');
+      } catch (_) {}
 
-      final features = _puntos.map((p) => {
-        'type': 'Feature',
-        'geometry': {'type': 'Point', 'coordinates': [p.longitud, p.latitud]},
-        'properties': {
-          'id': p.id,
-          'nombre': p.nombre,
-          'categoria': p.categoria,
-          'mainImageUrl': p.mainImageUrl ?? '',
-          'visitado': p.visitado,
-        },
-      } as Map<String, dynamic>).toList();
+      final features = _puntos
+          .map((p) => {
+                'type': 'Feature',
+                'geometry': {
+                  'type': 'Point',
+                  'coordinates': [p.longitud, p.latitud]
+                },
+                'properties': {
+                  'id': p.id,
+                  'nombre': p.nombre,
+                  'categoria': p.categoria,
+                  'mainImageUrl': p.mainImageUrl ?? '',
+                  'visitado': p.visitado,
+                },
+              } as Map<String, dynamic>)
+          .toList();
 
       await _mapboxMap!.style.addSource(
         GeoJsonSource(id: 'puntos', data: buildGeoJson(features)),
       );
       await _mapboxMap!.style.addStyleLayer(buildCircleLayerJson(), null);
+      await _mapboxMap!.style.addStyleLayer(buildSymbolLayerJson(), null);
     } catch (e) {
       debugPrint('Error loading circle layer: $e');
     }
@@ -205,7 +238,8 @@ class _MapScreenState extends State<MapScreen>
     if (_mapboxMap == null || _userLocation == null) return;
     _mapboxMap!.setCamera(CameraOptions(
       center: Point(
-        coordinates: Position(_userLocation!.longitude, _userLocation!.latitude),
+        coordinates:
+            Position(_userLocation!.longitude, _userLocation!.latitude),
       ),
       zoom: 15.5,
     ));
@@ -218,7 +252,7 @@ class _MapScreenState extends State<MapScreen>
     try {
       final features = await _mapboxMap!.queryRenderedFeatures(
         RenderedQueryGeometry.fromScreenCoordinate(context.touchPosition),
-        RenderedQueryOptions(layerIds: ['puntos-circles']),
+        RenderedQueryOptions(layerIds: ['puntos-symbols', 'puntos-circles']),
       );
       if (features.isEmpty) return;
 
@@ -228,8 +262,8 @@ class _MapScreenState extends State<MapScreen>
       final id = (props['id'] as num?)?.toInt();
       if (id == null || _puntos.isEmpty) return;
 
-      final punto = _puntos.firstWhere((p) => p.id == id,
-          orElse: () => _puntos.first);
+      final punto =
+          _puntos.firstWhere((p) => p.id == id, orElse: () => _puntos.first);
       _showPoiBottomSheet(punto);
     } catch (e) {
       debugPrint('Error on map tap: $e');
