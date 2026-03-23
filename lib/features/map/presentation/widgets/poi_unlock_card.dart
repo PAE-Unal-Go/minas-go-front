@@ -5,7 +5,6 @@ import '../../domain/entities/punto_de_interes.dart';
 import '../../domain/entities/categoria.dart';
 import '../../../../core/theme/app_design_system.dart';
 
-/// Full-screen Pokémon-style reveal card that plays when a POI is unlocked.
 class PoiUnlockCard extends StatefulWidget {
   final PuntoDeInteres punto;
   final VoidCallback onClose;
@@ -129,10 +128,8 @@ class _PoiUnlockCardState extends State<PoiUnlockCard>
             ),
           ),
 
-          // Particle shimmer lines
           if (_showCard) _buildShimmerParticles(),
 
-          // Flash overlay
           AnimatedBuilder(
             animation: _flashOpacity,
             builder: (_, __) => IgnorePointer(
@@ -248,7 +245,6 @@ class _PoiUnlockCardState extends State<PoiUnlockCard>
                         )
                       : _imagePlaceholder(),
                 ),
-                // Overlay gradient
                 Positioned.fill(
                   child: DecoratedBox(
                     decoration: BoxDecoration(
@@ -322,7 +318,6 @@ class _PoiUnlockCardState extends State<PoiUnlockCard>
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Shimmer line over nombre
                   AnimatedBuilder(
                     animation: _shimmerAnim,
                     builder: (_, child) => ShaderMask(
@@ -442,7 +437,6 @@ class _PoiUnlockCardState extends State<PoiUnlockCard>
   }
 }
 
-/// Paints rotating radial light beams behind the card.
 class _RadialRayPainter extends CustomPainter {
   final double progress;
   _RadialRayPainter(this.progress);
