@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../widgets/explore_fab.dart';
-
 class PoiDetailView extends StatelessWidget {
   final String categoryName;
   final String pointName;
@@ -100,8 +98,6 @@ class PoiDetailView extends StatelessWidget {
           ),
         ),
       ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
-      floatingActionButton: const ExploreFab(),
     );
   }
 

@@ -14,18 +14,29 @@ class HomeShellView extends StatefulWidget {
 }
 
 class _HomeShellViewState extends State<HomeShellView> {
-  final PageController _pageController = PageController();
+  final _homeNavigatorKey = GlobalKey<NavigatorState>();
+  late final _homeNavigatorObserver = _HomeNavigatorObserver(
+    onDepthChanged: _onHomeDepthChanged,
+  );
   int _currentIndex = 0;
   int _challengesSeed = 0;
+  bool _isInHomeDetail = false;
 
-  @override
-  void dispose() {
-    _pageController.dispose();
-    super.dispose();
+  void _onHomeDepthChanged(int depth) {
+    if (!mounted) return;
+    final inDetail = depth > 1;
+    if (_isInHomeDetail != inDetail) {
+      setState(() => _isInHomeDetail = inDetail);
+    }
   }
 
   Future<void> _onTabSelected(int index) async {
-    if (_currentIndex == index) return;
+    if (_currentIndex == index) {
+      if (index == 0) {
+        _homeNavigatorKey.currentState?.popUntil((route) => route.isFirst);
+      }
+      return;
+    }
 
     if (index == 1) {
       final canAccessLocation = await _canAccessLocation();
@@ -43,32 +54,32 @@ class _HomeShellViewState extends State<HomeShellView> {
     }
 
     setState(() => _currentIndex = index);
-    await _pageController.animateToPage(
-      index,
-      duration: const Duration(milliseconds: 280),
-      curve: Curves.easeOutCubic,
-    );
   }
 
   @override
   Widget build(BuildContext context) {
+    final selectedNavIndex =
+        (_currentIndex == 0 && _isInHomeDetail) ? -1 : _currentIndex;
+
     return Scaffold(
-      body: PageView(
-        controller: _pageController,
-        physics: const NeverScrollableScrollPhysics(),
-        onPageChanged: (index) {
-          if (_currentIndex != index) {
-            setState(() => _currentIndex = index);
-          }
-        },
+      body: IndexedStack(
+        index: _currentIndex,
         children: [
-          const HomeView(),
+          Navigator(
+            key: _homeNavigatorKey,
+            observers: [_homeNavigatorObserver],
+            onGenerateRoute: (_) {
+              return MaterialPageRoute(
+                builder: (_) => const HomeView(),
+              );
+            },
+          ),
           const MapScreen(),
           ChallengesView(key: ValueKey(_challengesSeed)),
         ],
       ),
       bottomNavigationBar: AppBottomNavBar(
-        currentIndex: _currentIndex,
+        currentIndex: selectedNavIndex,
         onTap: _onTabSelected,
       ),
     );
@@ -109,6 +120,42 @@ class _HomeShellViewState extends State<HomeShellView> {
         );
       },
     );
+  }
+}
+
+class _HomeNavigatorObserver extends NavigatorObserver {
+  final ValueChanged<int> onDepthChanged;
+  int _depth = 1;
+
+  _HomeNavigatorObserver({required this.onDepthChanged});
+
+  void _notifyDepth() {
+    onDepthChanged(_depth);
+  }
+
+  @override
+  void didPush(Route<dynamic> route, Route<dynamic>? previousRoute) {
+    super.didPush(route, previousRoute);
+    if (previousRoute == null) {
+      _depth = 1;
+    } else {
+      _depth++;
+    }
+    _notifyDepth();
+  }
+
+  @override
+  void didPop(Route<dynamic> route, Route<dynamic>? previousRoute) {
+    super.didPop(route, previousRoute);
+    _depth = (_depth - 1).clamp(0, 9999);
+    _notifyDepth();
+  }
+
+  @override
+  void didRemove(Route<dynamic> route, Route<dynamic>? previousRoute) {
+    super.didRemove(route, previousRoute);
+    _depth = (_depth - 1).clamp(0, 9999);
+    _notifyDepth();
   }
 }
 

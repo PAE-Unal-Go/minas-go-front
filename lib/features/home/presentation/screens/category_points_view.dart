@@ -3,7 +3,6 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 
 import '../../../../core/theme/app_design_system.dart';
-import '../widgets/explore_fab.dart';
 import '../../../map/domain/entities/punto_de_interes.dart';
 import 'poi_detail_view.dart';
 
@@ -105,8 +104,6 @@ class _CategoryPointsViewState extends State<CategoryPointsView> {
           ),
         ],
       ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
-      floatingActionButton: const ExploreFab(),
     );
   }
 
@@ -128,11 +125,6 @@ class _CategoryPointsViewState extends State<CategoryPointsView> {
             right: 16,
             child: Row(
               children: [
-                IconButton(
-                  icon: const Icon(Icons.arrow_back_ios_new_rounded),
-                  color: Colors.white,
-                  onPressed: () => Navigator.of(context).pop(),
-                ),
                 Expanded(
                   child: Text(
                     widget.categoryName,

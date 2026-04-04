@@ -81,9 +81,12 @@ class _NavItem extends StatelessWidget {
       child: InkWell(
         borderRadius: BorderRadius.circular(18),
         onTap: onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 220),
-          curve: Curves.easeOut,
+        splashColor: Colors.transparent,
+        highlightColor: Colors.transparent,
+        hoverColor: Colors.transparent,
+        focusColor: Colors.transparent,
+        overlayColor: WidgetStateProperty.all(Colors.transparent),
+        child: Container(
           padding: const EdgeInsets.symmetric(vertical: 6),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(18),
@@ -92,20 +95,14 @@ class _NavItem extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              AnimatedScale(
-                duration: const Duration(milliseconds: 220),
-                curve: Curves.easeOutBack,
-                scale: selected ? 1.08 : 1,
-                child: Icon(
-                  icon,
-                  size: 24,
-                  color: selected ? activeColor : inactiveColor,
-                ),
+              Icon(
+                icon,
+                size: 24,
+                color: selected ? activeColor : inactiveColor,
               ),
               const SizedBox(height: 2),
-              AnimatedDefaultTextStyle(
-                duration: const Duration(milliseconds: 220),
-                curve: Curves.easeOut,
+              Text(
+                label,
                 style: TextStyle(
                   color: selected ? activeColor : inactiveColor,
                   fontSize: AppTypography.fontSizeXs,
@@ -113,7 +110,6 @@ class _NavItem extends StatelessWidget {
                       ? AppTypography.weightBold
                       : AppTypography.weightMedium,
                 ),
-                child: Text(label),
               ),
             ],
           ),
