@@ -5,6 +5,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/theme/app_design_system.dart';
 import 'category_points_view.dart';
 import '../widgets/explore_fab.dart';
+import '../widgets/home_header.dart';
+import '../widgets/home_section_title.dart';
 import '../widgets/poi_card.dart';
 import '../../../map/data/repositories/map_repository_impl.dart';
 import '../../../map/domain/usecases/get_categorias.dart';
@@ -32,6 +34,7 @@ class _HomeViewState extends State<HomeView> with TickerProviderStateMixin {
   Map<String, List<PuntoDeInteres>> _puntosPorCategoria = {};
   bool _isLoading = true;
   String? _error;
+  static const int _burnedPoints = 150;
 
   @override
   void initState() {
@@ -54,7 +57,7 @@ class _HomeViewState extends State<HomeView> with TickerProviderStateMixin {
   }
 
   void _onProximityStateChange() {
-    // Refresh when points might have changed (e.g. after unlock)
+    // Refresh when points might have changed 
     _loadData(); 
   }
 
@@ -129,7 +132,15 @@ class _HomeViewState extends State<HomeView> with TickerProviderStateMixin {
             bottom: false,
             child: Column(
               children: [
-                _buildHeader(),
+                HomeHeader(
+                  firstName: _firstName,
+                  userName: _userName,
+                  userAvatar: _userAvatar,
+                  burnedPoints: _burnedPoints,
+                  onLogout: () async {
+                    await Supabase.instance.client.auth.signOut();
+                  },
+                ),
                 Expanded(
                   child: Container(
                     width: double.infinity,
@@ -141,7 +152,7 @@ class _HomeViewState extends State<HomeView> with TickerProviderStateMixin {
                     ),
                     child: Column(
                       children: [
-                        _buildSectionTitle(),
+                        const HomeSectionTitle(),
                         Expanded(child: _buildBody()),
                       ],
                     ),
@@ -194,111 +205,6 @@ class _HomeViewState extends State<HomeView> with TickerProviderStateMixin {
       return const Center(child: Text('No hay categorías disponibles.'));
     }
     return _buildPoiGrid();
-  }
-
-  Widget _buildHeader() {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(26, 14, 26, 26),
-      child: Row(
-        children: [
-          Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: AppColors.secondaryLight,
-              boxShadow: [
-                AppShadows.shadowSm,
-              ],
-            ),
-            child: ClipOval(
-              child: _userAvatar != null
-                  ? Image.network(
-                      _userAvatar!,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) =>
-                          _buildAvatarFallback(),
-                    )
-                  : _buildAvatarFallback(),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  '¡Hola, $_firstName!',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: AppTypography.fontSizeLg,
-                    fontWeight: AppTypography.weightBold,
-                    height: 1,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
-            ),
-          ),
-          IconButton(
-            onPressed: () async {
-              await Supabase.instance.client.auth.signOut();
-            },
-            icon: const Icon(Icons.logout, color: Colors.white, size: 22),
-            tooltip: 'Cerrar sesión',
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildAvatarFallback() {
-    return Container(
-      color: AppColors.secondaryLight,
-      child: Center(
-        child: Text(
-          _userName.isNotEmpty ? _userName[0].toUpperCase() : 'U',
-          style: const TextStyle(
-            color: AppColors.textPrimary,
-            fontSize: AppTypography.fontSizeLg,
-            fontWeight: AppTypography.weightBold,
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSectionTitle() {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(26, 26, 26, 8),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          const Text(
-            'Explora las diferentes categorías',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: AppColors.textPrimary,
-              fontSize: AppTypography.fontSizeLg,
-              fontWeight: AppTypography.weightBold,
-              height: 1.1,
-            ),
-          ),
-          const SizedBox(height: AppSpacing.s2),
-          Text(
-            'Cada una tiene una ruta con puntos por descubrir',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: AppColors.textSecondary,
-              fontSize: AppTypography.fontSizeXs,
-              fontWeight: AppTypography.weightMedium,
-            ),
-          ),
-          const SizedBox(height: 6),
-        ],
-      ),
-    );
   }
 
   Widget _buildPoiGrid() {
