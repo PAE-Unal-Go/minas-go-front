@@ -7,7 +7,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
 
 import 'core/theme/app_design_system.dart';
-import 'features/home/presentation/screens/home_view.dart';
+import 'features/home/presentation/screens/home_shell_view.dart';
 import 'features/login/presentation/screens/login_view.dart';
 import 'core/services/proximity_service.dart';
 import 'features/map/domain/entities/punto_de_interes.dart';
@@ -66,7 +66,7 @@ class _MainAppState extends State<MainApp> {
         ProximityService().init();
         
         _navigatorKey.currentState?.pushAndRemoveUntil(
-          MaterialPageRoute(builder: (_) => const HomeView()),
+          MaterialPageRoute(builder: (_) => const HomeShellView()),
           (_) => false,
         );
       } else if (event == AuthChangeEvent.signedOut) {
@@ -122,7 +122,7 @@ class _HomeWrapperState extends State<_HomeWrapper> {
   }
 
   @override
-  Widget build(BuildContext context) => const HomeView();
+  Widget build(BuildContext context) => const HomeShellView();
 }
 
 class _ProximityNotificationOverlay extends StatefulWidget {

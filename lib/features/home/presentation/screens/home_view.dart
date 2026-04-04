@@ -4,7 +4,6 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../../core/theme/app_design_system.dart';
 import 'category_points_view.dart';
-import '../widgets/explore_fab.dart';
 import '../widgets/home_header.dart';
 import '../widgets/home_section_title.dart';
 import '../widgets/poi_card.dart';
@@ -162,8 +161,6 @@ class _HomeViewState extends State<HomeView> with TickerProviderStateMixin {
             ),
           ),
         ),
-        floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
-        floatingActionButton: const ExploreFab(),
       ),
     );
   }
