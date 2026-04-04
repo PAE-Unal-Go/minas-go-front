@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart' as geo;
 
+import '../../../challenges/presentation/screens/challenges_view.dart';
 import '../../../map/presentation/screens/map_screen.dart';
 import '../widgets/app_bottom_nav_bar.dart';
 import 'home_view.dart';
@@ -15,6 +16,7 @@ class HomeShellView extends StatefulWidget {
 class _HomeShellViewState extends State<HomeShellView> {
   final PageController _pageController = PageController();
   int _currentIndex = 0;
+  int _challengesSeed = 0;
 
   @override
   void dispose() {
@@ -32,6 +34,12 @@ class _HomeShellViewState extends State<HomeShellView> {
         await _showLocationPermissionDialog();
         return;
       }
+    }
+
+    if (index == 2) {
+      setState(() {
+        _challengesSeed++;
+      });
     }
 
     setState(() => _currentIndex = index);
@@ -53,10 +61,10 @@ class _HomeShellViewState extends State<HomeShellView> {
             setState(() => _currentIndex = index);
           }
         },
-        children: const [
-          HomeView(),
-          MapScreen(),
-          _ChallengesPlaceholderView(),
+        children: [
+          const HomeView(),
+          const MapScreen(),
+          ChallengesView(key: ValueKey(_challengesSeed)),
         ],
       ),
       bottomNavigationBar: AppBottomNavBar(
@@ -104,16 +112,3 @@ class _HomeShellViewState extends State<HomeShellView> {
   }
 }
 
-class _ChallengesPlaceholderView extends StatelessWidget {
-  const _ChallengesPlaceholderView();
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Retos')),
-      body: const Center(
-        child: Text('Próximamente'),
-      ),
-    );
-  }
-}
