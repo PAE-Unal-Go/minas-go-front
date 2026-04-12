@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'package:flutter/foundation.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../domain/entities/answer_validation_result.dart';
@@ -11,6 +10,51 @@ import '../../domain/repositories/map_repository.dart';
 
 class MapRepositoryImpl implements MapRepository {
   final _supabase = Supabase.instance.client;
+
+  int _parseIntScalar(dynamic res, {required String rpcName}) {
+    if (res == null) return 0;
+    if (res is int) return res;
+    if (res is num) return res.toInt();
+    if (res is String) return int.tryParse(res.trim()) ?? 0;
+    if (res is List) {
+      if (res.isEmpty) return 0;
+      return _parseIntScalar(res.first, rpcName: rpcName);
+    }
+    if (res is Map) {
+      final map = Map<String, dynamic>.from(res);
+
+      for (final key in [
+        'value',
+        'result',
+        rpcName,
+        'puntos_totales',
+        'total',
+        'puntos',
+        'total_points',
+        'totalPoints',
+        'sum',
+      ]) {
+        if (map.containsKey(key)) {
+          return _parseIntScalar(map[key], rpcName: rpcName);
+        }
+      }
+
+      // If it's a single-entry map, use its only value.
+      if (map.length == 1) {
+        return _parseIntScalar(map.values.first, rpcName: rpcName);
+      }
+
+      // Otherwise, try the first parseable scalar value.
+      for (final value in map.values) {
+        try {
+          return _parseIntScalar(value, rpcName: rpcName);
+        } catch (_) {
+          // ignore
+        }
+      }
+    }
+    throw FormatException('Respuesta inesperada de RPC $rpcName: ${res.runtimeType}');
+  }
 
   @override
   Future<LocationPoint> getCurrentLocation() async {
@@ -78,7 +122,6 @@ class MapRepositoryImpl implements MapRepository {
         }).toList();
       }
 
-      // No user: return all puntos without visita info
       final res = await _supabase.from('puntos_de_interes').select();
       return (res as List).map((row) {
         final map = Map<String, dynamic>.from(row as Map);
@@ -183,10 +226,6 @@ class MapRepositoryImpl implements MapRepository {
         },
       );
 
-      if (kDebugMode) {
-        debugPrint('validate_answer raw response: $res');
-      }
-
       if (res is List) {
         if (res.isEmpty) {
           return const AnswerValidationResult(correct: false, pointsEarned: 0);
@@ -203,6 +242,43 @@ class MapRepositoryImpl implements MapRepository {
       return Future.error('Respuesta inesperada de RPC validate_answer: ${res.runtimeType}');
     } catch (e) {
       return Future.error('Error validating answer: $e');
+    }
+  }
+
+  @override
+  Future<int> getUserTotalPoints(String userId) async {
+    const rpcName = 'get_user_total_points';
+    try {
+      final res = await _supabase.rpc(
+        rpcName,
+        params: {
+          'p_usuario': userId,
+        },
+      );
+
+      final rpcPoints = _parseIntScalar(res, rpcName: rpcName);
+      if (rpcPoints != 0) return rpcPoints;
+
+      // Fallback to the user profile total points if the RPC returns 0.
+      // This covers the common case where the backend points source differs
+      try {
+        final profileRes = await _supabase
+            .from('usuarios')
+            .select('puntos_totales')
+            .eq('id', userId)
+            .limit(1);
+
+        if (profileRes.isNotEmpty) {
+          final row = Map<String, dynamic>.from(profileRes.first as Map);
+          final value = row['puntos_totales'];
+          return _parseIntScalar(value, rpcName: 'usuarios.puntos_totales');
+        }
+      } catch (_) {
+      }
+
+      return rpcPoints;
+    } catch (e) {
+      return Future.error('Error fetching user total points: $e');
     }
   }
 }

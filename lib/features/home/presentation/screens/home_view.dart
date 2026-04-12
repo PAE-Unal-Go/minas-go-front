@@ -10,6 +10,7 @@ import '../widgets/poi_card.dart';
 import '../../../map/data/repositories/map_repository_impl.dart';
 import '../../../map/domain/usecases/get_categorias.dart';
 import '../../../map/domain/usecases/get_puntos_con_visita.dart';
+import '../../../map/domain/usecases/get_user_total_points.dart';
 import '../../../map/domain/entities/categoria.dart';
 import '../../../map/domain/entities/punto_de_interes.dart';
 import '../../../../core/services/proximity_service.dart';
@@ -28,12 +29,13 @@ class _HomeViewState extends State<HomeView> with TickerProviderStateMixin {
   final _repo = MapRepositoryImpl();
   late final GetCategorias _getCategorias;
   late final GetPuntosConVisita _getPuntosConVisita;
+  late final GetUserTotalPoints _getUserTotalPoints;
 
   List<Categoria> _categorias = [];
   Map<String, List<PuntoDeInteres>> _puntosPorCategoria = {};
   bool _isLoading = true;
   String? _error;
-  static const int _burnedPoints = 150;
+  int _userTotalPoints = 0;
 
   @override
   void initState() {
@@ -50,6 +52,7 @@ class _HomeViewState extends State<HomeView> with TickerProviderStateMixin {
 
     _getCategorias = GetCategorias(_repo);
     _getPuntosConVisita = GetPuntosConVisita(_repo);
+    _getUserTotalPoints = GetUserTotalPoints(_repo);
 
     _loadData();
     ProximityService().addListener(_onProximityStateChange);
@@ -58,6 +61,18 @@ class _HomeViewState extends State<HomeView> with TickerProviderStateMixin {
   void _onProximityStateChange() {
     // Refresh when points might have changed 
     _loadData(); 
+  }
+
+  Future<void> _refreshUserPoints() async {
+    final userId = Supabase.instance.client.auth.currentUser?.id;
+    if (userId == null) return;
+    try {
+      final points = await _getUserTotalPoints(userId);
+      if (!mounted) return;
+      setState(() => _userTotalPoints = points);
+    } catch (_) {
+      // Ignore points errors to avoid blocking home.
+    }
   }
 
   @override
@@ -74,6 +89,8 @@ class _HomeViewState extends State<HomeView> with TickerProviderStateMixin {
         _getCategorias(userId),
         _getPuntosConVisita(userId),
       ]);
+
+      await _refreshUserPoints();
 
       final grouped = <String, List<PuntoDeInteres>>{};
       for (final p in puntos as List<PuntoDeInteres>) {
@@ -135,7 +152,7 @@ class _HomeViewState extends State<HomeView> with TickerProviderStateMixin {
                   firstName: _firstName,
                   userName: _userName,
                   userAvatar: _userAvatar,
-                  burnedPoints: _burnedPoints,
+                  burnedPoints: _userTotalPoints,
                   onLogout: () async {
                     await Supabase.instance.client.auth.signOut();
                   },

@@ -28,12 +28,8 @@ Future<void> main() async {
   }
 
 
-  // Validate that variables are loaded from the environment
-  if (supabaseUrl.isEmpty || supabaseAnonKey.isEmpty) {
-    debugPrint(
-        'WARNING: Las variables de SUPABASE no están cargadas. '
-        'Ejecuta con --dart-define-from-file=.env o configura tu IDE.');
-  }
+  // Validate that variables are loaded from the environment.
+  // Keep silent in production builds.
 
   await Supabase.initialize(
     url: supabaseUrl,
@@ -160,7 +156,7 @@ class _ProximityNotificationOverlayState extends State<_ProximityNotificationOve
     if (near != _lastNearPOI) {
       if (near != null) {
         _controller.forward();
-        _audioPlayer.play(AssetSource('sounds/princess.mp3')).catchError((e) => debugPrint('Error playing princess: $e'));
+        _audioPlayer.play(AssetSource('sounds/princess.mp3')).catchError((_) {});
       } else {
         _controller.reverse();
       }

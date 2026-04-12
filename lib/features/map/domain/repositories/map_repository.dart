@@ -23,4 +23,8 @@ abstract class MapRepository {
     required int preguntaId,
     required int selectedIndex,
   });
+
+  /// RPC: get_user_total_points(p_usuario)
+  /// Returns the total points earned by the user.
+  Future<int> getUserTotalPoints(String userId);
 }

@@ -11,6 +11,7 @@ import '../widgets/challenges_top_bar.dart';
 import '../widgets/point_reference_header.dart';
 import '../../../map/data/repositories/map_repository_impl.dart';
 import '../../../map/domain/usecases/get_question_for_visited_points.dart';
+import '../../../map/domain/usecases/get_user_total_points.dart';
 import '../../../map/domain/usecases/validate_answer.dart';
 import '../../../../core/services/proximity_service.dart';
 
@@ -22,6 +23,13 @@ class ChallengesView extends StatefulWidget {
 }
 
 class _ChallengesViewState extends State<ChallengesView> {
+  static const String _noMoreQuestionsMessage =
+      'No hay más preguntas disponibles. Desbloquea más puntos y vuelve a intentarlo.';
+
+  // Prevent showing the same question more than once per view session.
+  final Set<int> _shownQuestionIds = {};
+  static const int _maxFetchAttempts = 6;
+
   late ChallengeQuestion _question;
   int? _selectedIndex;
   bool _answered = false;
@@ -30,17 +38,31 @@ class _ChallengesViewState extends State<ChallengesView> {
   String? _error;
   int _lastPointsEarned = 0;
   bool _lastCorrect = false;
+  int _userTotalPoints = 0;
 
   final _repo = MapRepositoryImpl();
   late final GetQuestionForVisitedPoints _getQuestion;
+  late final GetUserTotalPoints _getUserTotalPoints;
   late final ValidateAnswer _validateAnswer;
 
   @override
   void initState() {
     super.initState();
     _getQuestion = GetQuestionForVisitedPoints(_repo);
+    _getUserTotalPoints = GetUserTotalPoints(_repo);
     _validateAnswer = ValidateAnswer(_repo);
     _loadQuestion();
+  }
+
+  Future<void> _refreshUserPoints() async {
+    final userId = Supabase.instance.client.auth.currentUser?.id;
+    if (userId == null) return;
+    try {
+      final points = await _getUserTotalPoints(userId);
+      if (!mounted) return;
+      setState(() => _userTotalPoints = points);
+    } catch (_) {
+    }
   }
 
   Future<void> _loadQuestion() async {
@@ -59,14 +81,32 @@ class _ChallengesViewState extends State<ChallengesView> {
         throw Exception('No hay sesión activa.');
       }
 
-      final quiz = await _getQuestion(userId);
-      if (quiz == null) {
-        throw Exception('No hay preguntas disponibles. Visita más puntos y vuelve a intentarlo.');
+      await _refreshUserPoints();
+
+      // Retry a few times to avoid repeated questions when the RPC returns
+      // a random row that may already have been shown in this session.
+      var attempts = 0;
+      var quiz = await _getQuestion(userId);
+      while (attempts < _maxFetchAttempts && quiz != null) {
+        if (!_shownQuestionIds.contains(quiz.id)) break;
+        attempts++;
+        quiz = await _getQuestion(userId);
       }
+
+      if (quiz == null) {
+        throw Exception(_noMoreQuestionsMessage);
+      }
+      if (_shownQuestionIds.contains(quiz.id)) {
+.
+        throw Exception(_noMoreQuestionsMessage);
+      }
+
+      final q = quiz;
+      _shownQuestionIds.add(q.id);
 
       final pointImage = ProximityService()
           .allPuntos
-          .where((p) => p.nombre == quiz.pointName)
+          .where((p) => p.nombre == q.pointName)
           .map((p) => p.mainImageUrl)
           .cast<String?>()
           .firstWhere(
@@ -76,21 +116,22 @@ class _ChallengesViewState extends State<ChallengesView> {
 
       setState(() {
         _question = ChallengeQuestion(
-          id: quiz.id.toString(),
-          pointName: quiz.pointName,
+          id: q.id.toString(),
+          pointName: q.pointName,
           pointLabel: 'Punto relacionado',
           pointImage: pointImage,
-          question: quiz.question,
-          rewardPoints: quiz.rewardPoints,
-          options: quiz.options,
-          correctIndex: quiz.correctIndex,
+          question: q.question,
+          rewardPoints: q.rewardPoints,
+          options: q.options,
+          correctIndex: q.correctIndex,
           correctAnswerText: null,
         );
         _isLoading = false;
       });
     } catch (e) {
+      final msg = e.toString().replaceFirst('Exception: ', '');
       setState(() {
-        _error = e.toString();
+        _error = msg;
         _isLoading = false;
       });
     }
@@ -123,6 +164,8 @@ class _ChallengesViewState extends State<ChallengesView> {
         _lastPointsEarned = res.pointsEarned;
         _answered = true;
       });
+
+      await _refreshUserPoints();
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -147,7 +190,7 @@ class _ChallengesViewState extends State<ChallengesView> {
       backgroundColor: AppColors.primaryMain,
       body: Column(
         children: [
-          const ChallengesTopBar(points: 150),
+          ChallengesTopBar(points: _userTotalPoints),
           Expanded(
             child: Container(
               width: double.infinity,
@@ -176,7 +219,7 @@ class _ChallengesViewState extends State<ChallengesView> {
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
                                     const Icon(
-                                      Icons.wifi_off_rounded,
+                                      Icons.lock_outline_rounded,
                                       size: 40,
                                       color: AppColors.textSecondary,
                                     ),

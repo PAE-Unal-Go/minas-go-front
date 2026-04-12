@@ -85,9 +85,6 @@ class ProximityService extends ChangeNotifier {
 
     if (bestNear != _nearPOI) {
       _nearPOI = bestNear;
-      if (_nearPOI != null) {
-        debugPrint('POI en rango detectado: ${_nearPOI?.nombre}');
-      }
     }
   }
 

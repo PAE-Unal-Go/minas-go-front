@@ -189,8 +189,7 @@ class _MapScreenState extends State<MapScreen>
     try {
       await registerMapIcons(_mapboxMap!);
       await _loadCircleLayer();
-    } catch (e) {
-      debugPrint('Error preparing map style: $e');
+    } catch (_) {
     }
   }
 
@@ -229,8 +228,7 @@ class _MapScreenState extends State<MapScreen>
       );
       await _mapboxMap!.style.addStyleLayer(buildCircleLayerJson(), null);
       await _mapboxMap!.style.addStyleLayer(buildSymbolLayerJson(), null);
-    } catch (e) {
-      debugPrint('Error loading circle layer: $e');
+    } catch (_) {
     }
   }
 
@@ -265,8 +263,7 @@ class _MapScreenState extends State<MapScreen>
       final punto =
           _puntos.firstWhere((p) => p.id == id, orElse: () => _puntos.first);
       _showPoiBottomSheet(punto);
-    } catch (e) {
-      debugPrint('Error on map tap: $e');
+    } catch (_) {
     }
   }
 

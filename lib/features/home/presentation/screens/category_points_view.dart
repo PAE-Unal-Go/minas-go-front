@@ -147,7 +147,11 @@ class _CategoryPointsViewState extends State<CategoryPointsView> {
             left: 12,
             right: 12,
             bottom: _isSummaryCollapsed ? 78 : -28,
-            child: _buildSummaryCard(progress, _isSummaryCollapsed),
+            child: _buildSummaryCard(
+              progress,
+              _isSummaryCollapsed,
+              '${widget.puntos.where((p) => p.visitado).length}/${widget.puntos.length}',
+            ),
           ),
         ],
       ),
@@ -211,7 +215,11 @@ class _CategoryPointsViewState extends State<CategoryPointsView> {
     );
   }
 
-  Widget _buildSummaryCard(double progress, bool isCollapsed) {
+  Widget _buildSummaryCard(
+    double progress,
+    bool isCollapsed,
+    String progressLabel,
+  ) {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 180),
       curve: Curves.easeOut,
@@ -258,7 +266,7 @@ class _CategoryPointsViewState extends State<CategoryPointsView> {
           Align(
             alignment: Alignment.centerRight,
             child: Text(
-              '${(progress * 100).round()}%',
+              progressLabel,
               style: const TextStyle(
                 color: AppColors.textSecondary,
                 fontSize: 10,

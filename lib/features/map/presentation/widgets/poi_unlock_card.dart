@@ -91,7 +91,7 @@ class _PoiUnlockCardState extends State<PoiUnlockCard>
     await _flashController.forward();
     if (mounted) {
       setState(() => _showCard = true);
-      _audioPlayer.play(AssetSource('sounds/capture.mp3')).catchError((e) => debugPrint('Error playing capture: $e'));
+      _audioPlayer.play(AssetSource('sounds/capture.mp3')).catchError((_) {});
     }
     await _flipController.forward();
     await Future.delayed(const Duration(milliseconds: 200));

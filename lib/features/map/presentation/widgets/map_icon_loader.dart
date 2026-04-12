@@ -1,5 +1,4 @@
 import 'dart:ui' as ui;
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
 
@@ -28,9 +27,7 @@ Future<void> preloadIconBytes() async {
         entry.value,
         grayscale: true,
       );
-      debugPrint('[MapIcons] 📦 Preloaded ${entry.key}');
-    } catch (e) {
-      debugPrint('[MapIcons] ❌ Preload failed for ${entry.key}: $e');
+    } catch (_) {
     }
   }
 }
@@ -39,7 +36,6 @@ Future<void> preloadIconBytes() async {
 Future<void> registerMapIcons(MapboxMap mapboxMap) async {
   if (_cachedPng.isEmpty || _cachedGrayPng.isEmpty) await preloadIconBytes();
 
-  int registered = 0;
   for (final entry in _cachedPng.entries) {
     try {
       await mapboxMap.style.addStyleImage(
@@ -51,8 +47,6 @@ Future<void> registerMapIcons(MapboxMap mapboxMap) async {
         [],
         null,
       );
-      registered++;
-      debugPrint('[MapIcons] ✅ icon-${entry.key}');
 
       final gray = _cachedGrayPng[entry.key];
       if (gray != null) {
@@ -65,14 +59,10 @@ Future<void> registerMapIcons(MapboxMap mapboxMap) async {
           [],
           null,
         );
-        registered++;
-        debugPrint('[MapIcons] ✅ icon-${entry.key}-gray');
       }
-    } catch (e) {
-      debugPrint('[MapIcons] ❌ register icon-${entry.key}: $e');
+    } catch (_) {
     }
   }
-  debugPrint('[MapIcons] Registered $registered/${_cachedPng.length * 2}');
 }
 
 // ─────────────────────────────── internal ────────────────────────────────────
