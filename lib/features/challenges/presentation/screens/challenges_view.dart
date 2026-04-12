@@ -97,7 +97,6 @@ class _ChallengesViewState extends State<ChallengesView> {
         throw Exception(_noMoreQuestionsMessage);
       }
       if (_shownQuestionIds.contains(quiz.id)) {
-.
         throw Exception(_noMoreQuestionsMessage);
       }
 
