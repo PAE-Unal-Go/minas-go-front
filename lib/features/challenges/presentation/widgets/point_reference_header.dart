@@ -10,6 +10,8 @@ class PointReferenceHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final imageUrl = question.pointImage;
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8),
       child: Row(
@@ -41,14 +43,46 @@ class PointReferenceHeader extends StatelessWidget {
           ),
           const SizedBox(width: 12),
           ClipOval(
-            child: Image.asset(
-              question.pointImage,
+            child: SizedBox(
               width: 56,
               height: 56,
-              fit: BoxFit.cover,
+              child: _buildImage(imageUrl),
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildImage(String? imageUrl) {
+    if (imageUrl == null || imageUrl.isEmpty) {
+      return _buildPlaceholder();
+    }
+
+    if (imageUrl.startsWith('http')) {
+      return Image.network(
+        imageUrl,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) => _buildPlaceholder(),
+      );
+    }
+
+    return Image.asset(
+      imageUrl,
+      fit: BoxFit.cover,
+      errorBuilder: (context, error, stackTrace) => _buildPlaceholder(),
+    );
+  }
+
+  Widget _buildPlaceholder() {
+    return DecoratedBox(
+      decoration: const BoxDecoration(gradient: AppGradients.primary),
+      child: Center(
+        child: Icon(
+          Icons.landscape_rounded,
+          size: 26,
+          color: Colors.white.withValues(alpha: 0.55),
+        ),
       ),
     );
   }

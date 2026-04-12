@@ -1,9 +1,12 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../domain/entities/answer_validation_result.dart';
 import '../../domain/entities/location_point.dart';
 import '../../domain/entities/punto_de_interes.dart';
 import '../../domain/entities/categoria.dart';
+import '../../domain/entities/quiz_question.dart';
 import '../../domain/repositories/map_repository.dart';
 
 class MapRepositoryImpl implements MapRepository {
@@ -133,6 +136,73 @@ class MapRepositoryImpl implements MapRepository {
       );
     } catch (e) {
       return Future.error('Error al desbloquear punto: $e');
+    }
+  }
+
+  @override
+  Future<QuizQuestion?> getQuestionForVisitedPoints(String userId) async {
+    try {
+      final res = await _supabase.rpc(
+        'get_question_for_visited_points',
+        params: {
+          'p_usuario_id': userId,
+        },
+      );
+
+      if (res == null) return null;
+
+      if (res is List) {
+        if (res.isEmpty) return null;
+        final row = Map<String, dynamic>.from(res.first as Map);
+        return QuizQuestion.fromMap(row);
+      }
+
+      if (res is Map) {
+        return QuizQuestion.fromMap(Map<String, dynamic>.from(res));
+      }
+
+      return Future.error('Respuesta inesperada de RPC get_question_for_visited_points: ${res.runtimeType}');
+    } catch (e) {
+      return Future.error('Error fetching quiz question: $e');
+    }
+  }
+
+  @override
+  Future<AnswerValidationResult> validateAnswer({
+    required String userId,
+    required int preguntaId,
+    required int selectedIndex,
+  }) async {
+    try {
+      final res = await _supabase.rpc(
+        'validate_answer',
+        params: {
+          'p_usuario_id': userId,
+          'p_pregunta_id': preguntaId,
+          'p_index_elegido': selectedIndex,
+        },
+      );
+
+      if (kDebugMode) {
+        debugPrint('validate_answer raw response: $res');
+      }
+
+      if (res is List) {
+        if (res.isEmpty) {
+          return const AnswerValidationResult(correct: false, pointsEarned: 0);
+        }
+        return AnswerValidationResult.fromMap(
+          Map<String, dynamic>.from(res.first as Map),
+        );
+      }
+
+      if (res is Map) {
+        return AnswerValidationResult.fromMap(Map<String, dynamic>.from(res));
+      }
+
+      return Future.error('Respuesta inesperada de RPC validate_answer: ${res.runtimeType}');
+    } catch (e) {
+      return Future.error('Error validating answer: $e');
     }
   }
 }

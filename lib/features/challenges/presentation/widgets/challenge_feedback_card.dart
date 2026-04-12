@@ -38,7 +38,7 @@ class ChallengeFeedbackCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  success ? '¡Correcto!' : 'Casi',
+                  success ? '¡Correcto!' : 'Respuesta incorrecta',
                   style: const TextStyle(
                     color: AppColors.textPrimary,
                     fontSize: AppTypography.fontSizeSm,
