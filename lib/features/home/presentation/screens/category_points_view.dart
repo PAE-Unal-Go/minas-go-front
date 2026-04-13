@@ -1,5 +1,6 @@
 import 'dart:ui';
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
 import '../../../../core/theme/app_design_system.dart';
@@ -80,7 +81,7 @@ class _CategoryPointsViewState extends State<CategoryPointsView> {
                         crossAxisCount: 3,
                         mainAxisSpacing: 12,
                         crossAxisSpacing: 12,
-                        childAspectRatio: 0.86,
+                        childAspectRatio: 0.80,
                       ),
                       itemCount: widget.puntos.length,
                       itemBuilder: (context, index) {
@@ -124,10 +125,20 @@ class _CategoryPointsViewState extends State<CategoryPointsView> {
           Positioned.fill(child: _buildHeaderBackground()),
           Positioned(
             top: topInset + 10,
-            left: 16,
+            left: 4,
             right: 16,
             child: Row(
               children: [
+                IconButton(
+                  icon: const Icon(
+                    Icons.arrow_back_ios_new_rounded,
+                    color: Colors.white,
+                    size: 22,
+                  ),
+                  onPressed: () => Navigator.of(context).pop(),
+                  splashRadius: 22,
+                  tooltip: 'Volver',
+                ),
                 Expanded(
                   child: Text(
                     widget.categoryName,
@@ -197,10 +208,11 @@ class _CategoryPointsViewState extends State<CategoryPointsView> {
     if (widget.categoryImageUrl != null &&
         widget.categoryImageUrl!.isNotEmpty) {
       if (widget.categoryImageUrl!.startsWith('http')) {
-        return Image.network(
-          widget.categoryImageUrl!,
+        return CachedNetworkImage(
+          imageUrl: widget.categoryImageUrl!,
           fit: BoxFit.cover,
-          errorBuilder: (_, __, ___) => _buildHeaderPlaceholder(),
+          placeholder: (_, __) => _buildHeaderPlaceholder(),
+          errorWidget: (_, __, ___) => _buildHeaderPlaceholder(),
         );
       }
       return Image.asset(
@@ -459,7 +471,7 @@ class _PointGridTile extends StatelessWidget {
 
   Widget _imageSection(String? rarity) {
     return SizedBox(
-      height: 88,
+      height: 78,
       width: double.infinity,
       child: Stack(
         fit: StackFit.expand,
@@ -502,7 +514,7 @@ class _PointGridTile extends StatelessWidget {
   Widget _nameSection(String? rarity) {
     return Expanded(
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(8, 6, 8, 6),
+        padding: const EdgeInsets.fromLTRB(8, 5, 8, 4),
         child: Text(
           punto.nombre,
           maxLines: 2,
@@ -533,7 +545,7 @@ class _PointImage extends StatelessWidget {
   Widget build(BuildContext context) {
     return PoiImageGallery(
       imagesUrls: urls,
-      height: 88,
+      height: 78,
       showIndicators: false,
       enableCarousel: false,
       borderRadius: BorderRadius.zero,

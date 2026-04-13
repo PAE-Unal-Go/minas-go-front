@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
 import '../../../../core/theme/app_design_system.dart';
@@ -67,13 +68,14 @@ class PoiCard extends StatelessWidget {
                       child: Padding(
                         padding: const EdgeInsets.fromLTRB(
                           AppSpacing.s3,
-                          10,
+                          8,
                           AppSpacing.s3,
-                          10,
+                          8,
                         ),
                         child: Column(
-                          mainAxisAlignment: MainAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
                           children: [
                             Text(
                               name,
@@ -85,7 +87,13 @@ class PoiCard extends StatelessWidget {
                                 fontWeight: AppTypography.weightBold,
                               ),
                             ),
-                            const SizedBox(height: AppSpacing.s2),
+                            ClipRRect(
+                              borderRadius:
+                                  BorderRadius.circular(AppSpacing.s1),
+                              child: const SizedBox(
+                                height: 7,
+                              ),
+                            ),
                             ClipRRect(
                               borderRadius:
                                   BorderRadius.circular(AppSpacing.s1),
@@ -119,10 +127,11 @@ class PoiCard extends StatelessWidget {
   Widget _buildBackground() {
     if (imageUrl != null && imageUrl!.isNotEmpty) {
       if (imageUrl!.startsWith('http')) {
-        return Image.network(
-          imageUrl!,
+        return CachedNetworkImage(
+          imageUrl: imageUrl!,
           fit: BoxFit.cover,
-          errorBuilder: (context, error, stackTrace) => _buildPlaceholder(),
+          placeholder: (_, __) => _buildShimmer(),
+          errorWidget: (_, __, ___) => _buildPlaceholder(),
         );
       }
 
@@ -133,6 +142,10 @@ class PoiCard extends StatelessWidget {
       );
     }
     return _buildPlaceholder();
+  }
+
+  Widget _buildShimmer() {
+    return const _ShimmerPlaceholder();
   }
 
   Widget _buildPlaceholder() {
@@ -146,6 +159,57 @@ class PoiCard extends StatelessWidget {
           size: 42,
           color: Colors.white.withValues(alpha: 0.55),
         ),
+      ),
+    );
+  }
+}
+
+class _ShimmerPlaceholder extends StatefulWidget {
+  const _ShimmerPlaceholder();
+  @override
+  State<_ShimmerPlaceholder> createState() => _ShimmerPlaceholderState();
+}
+
+class _ShimmerPlaceholderState extends State<_ShimmerPlaceholder>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl;
+  late final Animation<double> _anim;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    )..repeat();
+    _anim = Tween(begin: -1.5, end: 2.5).animate(
+      CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _anim,
+      builder: (_, __) => DecoratedBox(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment(_anim.value - 1, 0),
+            end: Alignment(_anim.value, 0),
+            colors: const [
+              Color(0xFFDDE0E8),
+              Color(0xFFF0F3FA),
+              Color(0xFFDDE0E8),
+            ],
+          ),
+        ),
+        child: const SizedBox.expand(),
       ),
     );
   }

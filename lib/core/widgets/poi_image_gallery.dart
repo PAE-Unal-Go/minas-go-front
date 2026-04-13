@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
 class PoiImageGallery extends StatefulWidget {
@@ -117,10 +118,11 @@ class _PoiImageGalleryState extends State<PoiImageGallery> {
 
   Widget _imageFor(String url) {
     if (url.startsWith('http')) {
-      return Image.network(
-        url,
+      return CachedNetworkImage(
+        imageUrl: url,
         fit: BoxFit.cover,
-        errorBuilder: (_, __, ___) => _placeholder(),
+        placeholder: (_, __) => const _ShimmerBox(),
+        errorWidget: (_, __, ___) => _placeholder(),
       );
     }
 
@@ -142,6 +144,58 @@ class _PoiImageGalleryState extends State<PoiImageGallery> {
       ),
       child: Center(
         child: Icon(Icons.image_not_supported_outlined, color: Color(0xFF6A7587)),
+      ),
+    );
+  }
+}
+
+/// Shimmer placeholder shown while a network image loads.
+class _ShimmerBox extends StatefulWidget {
+  const _ShimmerBox();
+  @override
+  State<_ShimmerBox> createState() => _ShimmerBoxState();
+}
+
+class _ShimmerBoxState extends State<_ShimmerBox>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl;
+  late final Animation<double> _anim;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    )..repeat();
+    _anim = Tween(begin: -1.5, end: 2.5).animate(
+      CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _anim,
+      builder: (_, __) => DecoratedBox(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment(_anim.value - 1, 0),
+            end: Alignment(_anim.value, 0),
+            colors: const [
+              Color(0xFFE0E3EA),
+              Color(0xFFF4F6FA),
+              Color(0xFFE0E3EA),
+            ],
+          ),
+        ),
+        child: const SizedBox.expand(),
       ),
     );
   }

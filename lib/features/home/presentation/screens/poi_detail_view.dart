@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 import 'dart:ui';
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
 import '../../../../core/theme/app_design_system.dart';
@@ -28,9 +29,10 @@ class PoiDetailView extends StatefulWidget {
 }
 
 class _PoiDetailViewState extends State<PoiDetailView>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   int _currentImageIndex = 0;
   late final AnimationController _anim;
+  late final AnimationController _shimmerOpacity;
 
   String? get _rarity => widget.punto.visitado ? widget.punto.rarity : null;
 
@@ -68,14 +70,29 @@ class _PoiDetailViewState extends State<PoiDetailView>
       },
     );
 
+    _shimmerOpacity = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 600),
+      value: 1.0,
+    );
+
     if (_rarity == PoiRarity.important || _rarity == PoiRarity.legendary) {
       _anim.repeat();
+      // Stop shimmer after 3 seconds with a graceful fade-out
+      Future.delayed(const Duration(seconds: 3), () {
+        if (mounted) {
+          _shimmerOpacity.reverse().then((_) {
+            if (mounted) _anim.stop();
+          });
+        }
+      });
     }
   }
 
   @override
   void dispose() {
     _anim.dispose();
+    _shimmerOpacity.dispose();
     super.dispose();
   }
 
@@ -86,11 +103,14 @@ class _PoiDetailViewState extends State<PoiDetailView>
       body: Stack(
         children: [
           if (_rarity == PoiRarity.legendary)
-            AnimatedBuilder(
-              animation: _anim,
-              builder: (_, __) => CustomPaint(
-                painter: _StarfieldPainter(_anim.value),
-                child: const SizedBox.expand(),
+            FadeTransition(
+              opacity: _shimmerOpacity,
+              child: AnimatedBuilder(
+                animation: _anim,
+                builder: (_, __) => CustomPaint(
+                  painter: _StarfieldPainter(_anim.value),
+                  child: const SizedBox.expand(),
+                ),
               ),
             ),
           if (_rarity == PoiRarity.important)
@@ -246,32 +266,36 @@ class _PoiDetailViewState extends State<PoiDetailView>
               Stack(
                 children: [
                   _buildImageGallery(height: 250),
-                  Positioned.fill(
-                    child: DecoratedBox(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: const Alignment(-1, -1),
-                          end: const Alignment(1, 1),
-                          colors: [
-                            Colors.transparent,
-                            const Color(0xFF2DD4BF).withValues(alpha: 0.10),
-                            Colors.transparent,
-                          ],
+                  IgnorePointer(
+                    child: Positioned.fill(
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: const Alignment(-1, -1),
+                            end: const Alignment(1, 1),
+                            colors: [
+                              Colors.transparent,
+                              const Color(0xFF2DD4BF).withValues(alpha: 0.10),
+                              Colors.transparent,
+                            ],
+                          ),
                         ),
                       ),
                     ),
                   ),
-                  Positioned.fill(
-                    child: DecoratedBox(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          colors: [
-                            Colors.transparent,
-                            Colors.white.withValues(alpha: 0.20),
-                          ],
-                          stops: const [0.6, 1.0],
+                  IgnorePointer(
+                    child: Positioned.fill(
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              Colors.transparent,
+                              Colors.white.withValues(alpha: 0.20),
+                            ],
+                            stops: const [0.6, 1.0],
+                          ),
                         ),
                       ),
                     ),
@@ -332,44 +356,51 @@ class _PoiDetailViewState extends State<PoiDetailView>
             Stack(
               children: [
                 _buildImageGallery(height: 250),
-                Positioned.fill(
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          Colors.transparent,
-                          const Color(0xFF1A0E00).withValues(alpha: 0.75),
-                        ],
-                        stops: const [0.45, 1.0],
+                IgnorePointer(
+                  child: Positioned.fill(
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Colors.transparent,
+                            const Color(0xFF1A0E00).withValues(alpha: 0.75),
+                          ],
+                          stops: const [0.45, 1.0],
+                        ),
                       ),
                     ),
                   ),
                 ),
                 // Animated gold shimmer sweep
-                AnimatedBuilder(
-                  animation: _anim,
-                  builder: (_, __) {
-                    final sweep = -2.0 + _anim.value * 4.0;
-                    return Positioned.fill(
-                      child: DecoratedBox(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment(sweep - 0.5, -1),
-                            end: Alignment(sweep + 0.5, 1),
-                            colors: [
-                              Colors.transparent,
-                              const Color(0xFFF59E0B).withValues(alpha: 0.30),
-                              Colors.white.withValues(alpha: 0.22),
-                              const Color(0xFFFEF08A).withValues(alpha: 0.30),
-                              Colors.transparent,
-                            ],
-                          ),
-                        ),
+                Positioned.fill(
+                  child: IgnorePointer(
+                    child: FadeTransition(
+                      opacity: _shimmerOpacity,
+                      child: AnimatedBuilder(
+                        animation: _anim,
+                        builder: (_, __) {
+                          final sweep = -2.0 + _anim.value * 4.0;
+                          return DecoratedBox(
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                begin: Alignment(sweep - 0.5, -1),
+                                end: Alignment(sweep + 0.5, 1),
+                                colors: [
+                                  Colors.transparent,
+                                  const Color(0xFFF59E0B).withValues(alpha: 0.30),
+                                  Colors.white.withValues(alpha: 0.22),
+                                  const Color(0xFFFEF08A).withValues(alpha: 0.30),
+                                  Colors.transparent,
+                                ],
+                              ),
+                            ),
+                          );
+                        },
                       ),
-                    );
-                  },
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -471,61 +502,88 @@ class _PoiDetailViewState extends State<PoiDetailView>
         child: Stack(
           fit: StackFit.expand,
           children: [
-            _buildImageGallery(height: double.infinity),
-            AnimatedBuilder(
-              animation: _anim,
-              builder: (_, __) {
-                final sweep = -2.0 + _anim.value * 4.0;
-                return Positioned.fill(
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment(sweep - 0.7, -1),
-                        end: Alignment(sweep + 0.7, 1),
-                        colors: [
-                          Colors.transparent,
-                          const Color(0xFFE879F9).withValues(alpha: 0.22),
-                          Colors.white.withValues(alpha: 0.28),
-                          const Color(0xFF4D96FF).withValues(alpha: 0.22),
-                          Colors.transparent,
-                        ],
-                      ),
-                    ),
+            _buildImageGallery(height: double.infinity, showIndicators: false),
+            // Shimmer sweep 1
+            Positioned.fill(
+              child: IgnorePointer(
+                child: FadeTransition(
+                  opacity: _shimmerOpacity,
+                  child: AnimatedBuilder(
+                    animation: _anim,
+                    builder: (_, __) {
+                      final sweep = -2.0 + _anim.value * 4.0;
+                      return DecoratedBox(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment(sweep - 0.7, -1),
+                            end: Alignment(sweep + 0.7, 1),
+                            colors: [
+                              Colors.transparent,
+                              const Color(0xFFE879F9).withValues(alpha: 0.22),
+                              Colors.white.withValues(alpha: 0.28),
+                              const Color(0xFF4D96FF).withValues(alpha: 0.22),
+                              Colors.transparent,
+                            ],
+                          ),
+                        ),
+                      );
+                    },
                   ),
-                );
-              },
+                ),
+              ),
             ),
 
-            // Second shimmer going opposite direction (depth feel)
-            AnimatedBuilder(
-              animation: _anim,
-              builder: (_, __) {
-                final sweep = 2.0 - _anim.value * 4.0;
-                return Positioned.fill(
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment(sweep - 0.5, 1),
-                        end: Alignment(sweep + 0.5, -1),
-                        colors: [
-                          Colors.transparent,
-                          const Color(0xFFFFD93D).withValues(alpha: 0.12),
-                          Colors.transparent,
-                        ],
-                      ),
-                    ),
+            // Shimmer sweep 2 (opposite direction)
+            Positioned.fill(
+              child: IgnorePointer(
+                child: FadeTransition(
+                  opacity: _shimmerOpacity,
+                  child: AnimatedBuilder(
+                    animation: _anim,
+                    builder: (_, __) {
+                      final sweep = 2.0 - _anim.value * 4.0;
+                      return DecoratedBox(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment(sweep - 0.5, 1),
+                            end: Alignment(sweep + 0.5, -1),
+                            colors: [
+                              Colors.transparent,
+                              const Color(0xFFFFD93D).withValues(alpha: 0.12),
+                              Colors.transparent,
+                            ],
+                          ),
+                        ),
+                      );
+                    },
                   ),
-                );
-              },
+                ),
+              ),
             ),
 
             // Sparkle particles
-            AnimatedBuilder(
-              animation: _anim,
-              builder: (_, __) => CustomPaint(
-                painter: _SparklesPainter(_anim.value),
+            Positioned.fill(
+              child: IgnorePointer(
+                child: FadeTransition(
+                  opacity: _shimmerOpacity,
+                  child: AnimatedBuilder(
+                    animation: _anim,
+                    builder: (_, __) => CustomPaint(
+                      painter: _SparklesPainter(_anim.value),
+                    ),
+                  ),
+                ),
               ),
             ),
+
+            // Carousel indicators (above the info overlay)
+            if (_images.length > 1)
+              Positioned(
+                bottom: 140,
+                left: 0,
+                right: 0,
+                child: Center(child: _buildPageIndicators()),
+              ),
 
             // Bottom glassmorphism info overlay
             Positioned(
@@ -704,7 +762,29 @@ class _PoiDetailViewState extends State<PoiDetailView>
     );
   }
 
-  Widget _buildImageGallery({required double height}) {
+  Widget _buildPageIndicators() {
+    final images = _images;
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: List.generate(
+        images.length,
+        (index) => AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          margin: const EdgeInsets.symmetric(horizontal: 3),
+          height: 6,
+          width: index == _currentImageIndex ? 18 : 6,
+          decoration: BoxDecoration(
+            color: index == _currentImageIndex
+                ? Colors.white
+                : Colors.white.withValues(alpha: 0.5),
+            borderRadius: BorderRadius.circular(20),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildImageGallery({required double height, bool showIndicators = true}) {
     final images = _images;
     if (images.isEmpty) {
       return _buildImageContainer(_placeholder(), height: height);
@@ -728,29 +808,13 @@ class _PoiDetailViewState extends State<PoiDetailView>
             itemBuilder: (_, index) => _buildSingleImage(images[index]),
           ),
         ),
-        Positioned(
-          bottom: 10,
-          left: 0,
-          right: 0,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: List.generate(
-              images.length,
-              (index) => AnimatedContainer(
-                duration: const Duration(milliseconds: 180),
-                margin: const EdgeInsets.symmetric(horizontal: 3),
-                height: 6,
-                width: index == _currentImageIndex ? 18 : 6,
-                decoration: BoxDecoration(
-                  color: index == _currentImageIndex
-                      ? Colors.white
-                      : Colors.white.withValues(alpha: 0.5),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-              ),
-            ),
+        if (showIndicators)
+          Positioned(
+            bottom: 10,
+            left: 0,
+            right: 0,
+            child: _buildPageIndicators(),
           ),
-        ),
       ],
     );
   }
@@ -764,10 +828,11 @@ class _PoiDetailViewState extends State<PoiDetailView>
 
   Widget _buildSingleImage(String url) {
     if (url.startsWith('http')) {
-      return Image.network(
-        url,
+      return CachedNetworkImage(
+        imageUrl: url,
         fit: BoxFit.cover,
-        errorBuilder: (_, __, ___) => _placeholder(),
+        placeholder: (_, __) => _shimmerPlaceholder(),
+        errorWidget: (_, __, ___) => _placeholder(),
       );
     }
 
@@ -775,6 +840,37 @@ class _PoiDetailViewState extends State<PoiDetailView>
       url,
       fit: BoxFit.cover,
       errorBuilder: (_, __, ___) => _placeholder(),
+    );
+  }
+
+  Widget _shimmerPlaceholder() {
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0.0, end: 1.0),
+      duration: const Duration(milliseconds: 900),
+      builder: (_, v, __) {
+        final t = (v * 2 * math.pi);
+        return DecoratedBox(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment(math.sin(t) - 0.5, 0),
+              end: Alignment(math.sin(t) + 0.5, 0),
+              colors: [
+                switch (_rarity?.toLowerCase()) {
+                  'legendary' => const Color(0xFF1A0030),
+                  'important' => const Color(0xFF1A0E00),
+                  _ => const Color(0xFFD0D4E0),
+                },
+                switch (_rarity?.toLowerCase()) {
+                  'legendary' => const Color(0xFF2D0050),
+                  'important' => const Color(0xFF2D1A00),
+                  _ => const Color(0xFFEBEEF5),
+                },
+              ],
+            ),
+          ),
+          child: const SizedBox.expand(),
+        );
+      },
     );
   }
 
