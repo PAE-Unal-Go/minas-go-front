@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 
 import '../../../../core/theme/app_design_system.dart';
+import '../../../../core/utils/poi_rarity.dart';
 import '../../../map/domain/entities/punto_de_interes.dart';
 import 'poi_detail_view.dart';
 
@@ -89,10 +90,8 @@ class _CategoryPointsViewState extends State<CategoryPointsView> {
                             Navigator.of(context).push(
                               MaterialPageRoute(
                                 builder: (_) => PoiDetailView(
+                                  punto: punto,
                                   categoryName: widget.categoryName,
-                                  pointName: punto.nombre,
-                                  pointDescription: punto.descripcion ?? '',
-                                  imageUrl: punto.mainImageUrl,
                                 ),
                               ),
                             );
@@ -338,6 +337,8 @@ class _LegendDot extends StatelessWidget {
   }
 }
 
+// ─── Grid tile with static rarity distinction ────────────────────────────────
+
 class _PointGridTile extends StatelessWidget {
   final PuntoDeInteres punto;
   final VoidCallback onTap;
@@ -346,53 +347,179 @@ class _PointGridTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
+    final rarity = punto.visitado ? punto.rarity : null;
+    return _wrapBorder(
+      ClipRRect(
         borderRadius: BorderRadius.circular(AppRadius.md),
-        onTap: onTap,
-        child: Container(
-          decoration: BoxDecoration(
-            color: AppColors.surface,
-            borderRadius: BorderRadius.circular(AppRadius.md),
-            boxShadow: const [AppShadows.shadowSm],
+        child: Material(
+          color: Colors.white,
+          child: InkWell(
+            onTap: onTap,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _imageSection(rarity),
+                _nameSection(rarity),
+              ],
+            ),
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              ClipRRect(
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(AppRadius.md),
-                ),
-                child: SizedBox(
-                  height: 88,
-                  width: double.infinity,
-                  child: _PointImage(url: punto.mainImageUrl),
-                ),
-              ),
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(8, 6, 8, 6),
-                  child: Text(
-                    punto.nombre,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: AppColors.textPrimary,
-                      fontSize: 11,
-                      fontWeight: AppTypography.weightMedium,
-                      height: 1.2,
-                    ),
-                  ),
-                ),
+        ),
+      ),
+      rarity,
+    );
+  }
+
+  // ── Border wrapper ───────────────────────────────────────────────────────
+
+  Widget _wrapBorder(Widget child, String? rarity) {
+    return switch (rarity?.toLowerCase()) {
+      PoiRarity.basic => Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(AppRadius.md + 1.5),
+            color: const Color(0xFF2DD4BF),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF2DD4BF).withValues(alpha: 0.40),
+                blurRadius: 8,
+                spreadRadius: 1,
               ),
             ],
+          ),
+          padding: const EdgeInsets.all(1.5),
+          child: child,
+        ),
+      PoiRarity.important => Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(AppRadius.md + 1.5),
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Color(0xFF92400E),
+                Color(0xFFF59E0B),
+                Color(0xFFFEF08A),
+                Color(0xFFF59E0B),
+                Color(0xFF92400E),
+              ],
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFFF59E0B).withValues(alpha: 0.45),
+                blurRadius: 10,
+                spreadRadius: 1,
+              ),
+            ],
+          ),
+          padding: const EdgeInsets.all(1.5),
+          child: child,
+        ),
+      PoiRarity.legendary => Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(AppRadius.md + 2),
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Color(0xFFFF6B6B),
+                Color(0xFFE879F9),
+                Color(0xFF4D96FF),
+              ],
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFFE879F9).withValues(alpha: 0.40),
+                blurRadius: 12,
+                spreadRadius: 1,
+              ),
+              BoxShadow(
+                color: const Color(0xFF4D96FF).withValues(alpha: 0.20),
+                blurRadius: 18,
+              ),
+            ],
+          ),
+          padding: const EdgeInsets.all(2),
+          child: child,
+        ),
+      _ => Container(
+          decoration: const BoxDecoration(
+            borderRadius:
+                BorderRadius.all(Radius.circular(AppRadius.md)),
+            boxShadow: [AppShadows.shadowSm],
+          ),
+          child: child,
+        ),
+    };
+  }
+
+  // ── Image section ─────────────────────────────────────────────────────────
+
+  Widget _imageSection(String? rarity) {
+    return SizedBox(
+      height: 88,
+      width: double.infinity,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          _PointImage(url: punto.mainImageUrl),
+          if (rarity != null)
+            Positioned(
+              left: 5,
+              bottom: 5,
+              child: _rarityBadge(rarity),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _rarityBadge(String rarity) {
+    final color = PoiRarity.primaryColor(rarity);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+      decoration: BoxDecoration(
+        color: Colors.black.withValues(alpha: 0.60),
+        borderRadius: BorderRadius.circular(5),
+        border: Border.all(color: color.withValues(alpha: 0.85), width: 1),
+      ),
+      child: Text(
+        PoiRarity.symbol(rarity),
+        style: TextStyle(
+          color: color,
+          fontSize: 9,
+          fontWeight: FontWeight.w900,
+          letterSpacing: 0.5,
+        ),
+      ),
+    );
+  }
+
+  // ── Name section ──────────────────────────────────────────────────────────
+
+  Widget _nameSection(String? rarity) {
+    return Expanded(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(8, 6, 8, 6),
+        child: Text(
+          punto.nombre,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            color: rarity != null
+                ? AppColors.textPrimary
+                : AppColors.textSecondary,
+            fontSize: 11,
+            fontWeight: rarity != null
+                ? AppTypography.weightSemiBold
+                : AppTypography.weightMedium,
+            height: 1.2,
           ),
         ),
       ),
     );
   }
 }
+
+// ─── Point image helper ───────────────────────────────────────────────────────
 
 class _PointImage extends StatelessWidget {
   final String? url;
@@ -418,9 +545,7 @@ class _PointImage extends StatelessWidget {
 
   Widget _placeholder() {
     return const DecoratedBox(
-      decoration: BoxDecoration(
-        gradient: AppGradients.primary,
-      ),
+      decoration: BoxDecoration(gradient: AppGradients.primary),
       child: Center(
         child: Icon(Icons.image_not_supported_outlined, color: Colors.white),
       ),

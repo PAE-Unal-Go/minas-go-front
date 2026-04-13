@@ -4,15 +4,18 @@ import 'package:audioplayers/audioplayers.dart';
 import '../../domain/entities/punto_de_interes.dart';
 import '../../domain/entities/categoria.dart';
 import '../../../../core/theme/app_design_system.dart';
+import '../../../../core/utils/poi_rarity.dart';
 
 class PoiUnlockCard extends StatefulWidget {
   final PuntoDeInteres punto;
   final VoidCallback onClose;
+  final int pointsEarned;
 
   const PoiUnlockCard({
     super.key,
     required this.punto,
     required this.onClose,
+    this.pointsEarned = 0,
   });
 
   @override
@@ -113,17 +116,29 @@ class _PoiUnlockCardState extends State<PoiUnlockCard>
       backgroundColor: Colors.black,
       body: Stack(
         children: [
-          // Background radial glow
+          // Background radial glow (rarity-aware)
           Container(
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               gradient: RadialGradient(
                 center: Alignment.center,
                 radius: 1.2,
-                colors: [
-                  Color(0xFF1C2AD8),
-                  Color(0xFF0A0F5A),
-                  Colors.black,
-                ],
+                colors: switch (widget.punto.rarity?.toLowerCase()) {
+                  PoiRarity.important => [
+                      const Color(0xFF3D2000),
+                      const Color(0xFF1A0E00),
+                      Colors.black,
+                    ],
+                  PoiRarity.legendary => [
+                      const Color(0xFF2D0050),
+                      const Color(0xFF0D001A),
+                      Colors.black,
+                    ],
+                  _ => const [
+                      Color(0xFF1C2AD8),
+                      Color(0xFF0A0F5A),
+                      Colors.black,
+                    ],
+                },
               ),
             ),
           ),
@@ -199,6 +214,149 @@ class _PoiUnlockCardState extends State<PoiUnlockCard>
     );
   }
 
+  Widget _buildRarityRow(String? rarity, int pointsEarned) {
+    final color = PoiRarity.primaryColor(rarity);
+    final label = PoiRarity.label(rarity);
+    final stars = PoiRarity.starCount(rarity);
+
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.15),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: color.withValues(alpha: 0.6), width: 1.5),
+            boxShadow: [
+              BoxShadow(
+                color: color.withValues(alpha: 0.25),
+                blurRadius: 8,
+              ),
+            ],
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ...List.generate(
+                stars,
+                (_) => Padding(
+                  padding: const EdgeInsets.only(right: 2),
+                  child: Icon(Icons.star_rounded, color: color, size: 11),
+                ),
+              ),
+              const SizedBox(width: 4),
+              Text(
+                label.toUpperCase(),
+                style: TextStyle(
+                  color: color,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 1.2,
+                ),
+              ),
+            ],
+          ),
+        ),
+        if (pointsEarned > 0) ...[
+          const SizedBox(width: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: Colors.white.withValues(alpha: 0.25),
+                width: 1.5,
+              ),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.bolt_rounded, color: Color(0xFFF59E0B), size: 13),
+                const SizedBox(width: 3),
+                Text(
+                  '+$pointsEarned pts',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  BoxDecoration _rarityCardDecoration(String? rarity) {
+    return switch (rarity?.toLowerCase()) {
+      PoiRarity.important => BoxDecoration(
+          borderRadius: BorderRadius.circular(28),
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFF2D1A00), Color(0xFF1A0F00)],
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFFF59E0B).withValues(alpha: 0.65),
+              blurRadius: 52,
+              spreadRadius: 4,
+            ),
+          ],
+          border: Border.all(
+            color: const Color(0xFFF59E0B).withValues(alpha: 0.5),
+            width: 1.5,
+          ),
+        ),
+      PoiRarity.legendary => BoxDecoration(
+          borderRadius: BorderRadius.circular(28),
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFF1A0030), Color(0xFF0D001A)],
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFFE879F9).withValues(alpha: 0.6),
+              blurRadius: 56,
+              spreadRadius: 6,
+            ),
+            BoxShadow(
+              color: const Color(0xFF4D96FF).withValues(alpha: 0.35),
+              blurRadius: 80,
+              spreadRadius: 2,
+            ),
+          ],
+          border: Border.all(
+            color: const Color(0xFFE879F9).withValues(alpha: 0.5),
+            width: 1.5,
+          ),
+        ),
+      _ => BoxDecoration(
+          borderRadius: BorderRadius.circular(28),
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFF1C2AD8), Color(0xFF0E147A)],
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.primaryMain.withValues(alpha: 0.7),
+              blurRadius: 48,
+              spreadRadius: 4,
+            ),
+          ],
+          border: Border.all(
+            color: Colors.white.withValues(alpha: 0.25),
+            width: 1.5,
+          ),
+        ),
+    };
+  }
+
   Widget _buildCard() {
     final punto = widget.punto;
     final hasImage = punto.mainImageUrl != null && punto.mainImageUrl!.isNotEmpty;
@@ -207,25 +365,7 @@ class _PoiUnlockCardState extends State<PoiUnlockCard>
       width: MediaQuery.of(context).size.width * 0.85,
       constraints: const BoxConstraints(maxWidth: 360),
       margin: const EdgeInsets.symmetric(vertical: 48),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(28),
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFF1C2AD8), Color(0xFF0E147A)],
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.primaryMain.withValues(alpha: 0.7),
-            blurRadius: 48,
-            spreadRadius: 4,
-          ),
-        ],
-        border: Border.all(
-          color: Colors.white.withValues(alpha: 0.25),
-          width: 1.5,
-        ),
-      ),
+      decoration: _rarityCardDecoration(punto.rarity),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(28),
         child: Column(
@@ -281,7 +421,7 @@ class _PoiUnlockCardState extends State<PoiUnlockCard>
                     ),
                   ),
                 ),
-                // Unlock badge
+                // Unlock badge (rarity-colored)
                 if (_showBadge)
                   Positioned(
                     top: 12,
@@ -291,11 +431,11 @@ class _PoiUnlockCardState extends State<PoiUnlockCard>
                       child: Container(
                         padding: const EdgeInsets.all(10),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFF59E0B),
+                          color: PoiRarity.primaryColor(punto.rarity),
                           shape: BoxShape.circle,
                           boxShadow: [
                             BoxShadow(
-                              color: const Color(0xFFF59E0B).withValues(alpha: 0.6),
+                              color: PoiRarity.primaryColor(punto.rarity).withValues(alpha: 0.6),
                               blurRadius: 16,
                               spreadRadius: 2,
                             ),
@@ -347,7 +487,9 @@ class _PoiUnlockCardState extends State<PoiUnlockCard>
                       ),
                     ),
                   ),
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 10),
+                  _buildRarityRow(punto.rarity, widget.pointsEarned),
+                  const SizedBox(height: 10),
                   Row(
                     children: [
                       const Icon(Icons.location_on_rounded,

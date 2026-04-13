@@ -52,6 +52,7 @@ class _MapScreenState extends State<MapScreen>
   AnimationController? _pulseController;
   Timer? _vibrationTimer;
   bool _isNearAnyUnvisited = false;
+  bool _hasCenteredOnUser = false;
 
   // ─────────────────────────────── Lifecycle ───────────────────────────────
 
@@ -124,6 +125,11 @@ class _MapScreenState extends State<MapScreen>
     });
 
     if (_mapboxMap != null) _loadCircleLayer();
+
+    if (!_hasCenteredOnUser && _mapboxMap != null && _userLocation != null) {
+      _hasCenteredOnUser = true;
+      _centerMap();
+    }
   }
 
   void _startProximityVibration() {
@@ -289,7 +295,7 @@ class _MapScreenState extends State<MapScreen>
       if ((await Vibration.hasVibrator()) == true) {
         Vibration.vibrate(duration: 500);
       }
-      await _unlockPoi(userId, punto.id);
+      final pointsEarned = await _unlockPoi(userId, punto.id);
       await ProximityService().refreshPuntos();
 
       if (mounted) {
@@ -297,6 +303,7 @@ class _MapScreenState extends State<MapScreen>
           opaque: false,
           pageBuilder: (_, __, ___) => PoiUnlockCard(
             punto: _puntos.firstWhere((p) => p.id == punto.id),
+            pointsEarned: pointsEarned,
             onClose: () => Navigator.of(context).pop(),
           ),
           transitionsBuilder: (_, anim, __, child) =>

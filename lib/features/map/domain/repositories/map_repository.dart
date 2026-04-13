@@ -9,7 +9,9 @@ abstract class MapRepository {
   Future<String> getPoisGeoJson();
   Future<List<PuntoDeInteres>> getPuntosConVisita(String? userId);
   Future<List<Categoria>> getCategorias(String? userId);
-  Future<void> unlockPoi(String userId, int puntoId);
+  /// RPC: registrar_visita(p_usuario, p_punto)
+  /// Registers the visit and returns points earned from the unlock.
+  Future<int> unlockPoi(String userId, int puntoId);
 
   /// RPC: get_question_for_visited_points(p_usuario_id)
   /// Returns a random quiz question related to points visited by the user

@@ -92,9 +92,15 @@ class _MainAppState extends State<MainApp> {
       theme: AppTheme.light(),
       builder: (context, child) {
         return Stack(
+          clipBehavior: Clip.none,
           children: [
             if (child != null) child,
-            const _ProximityNotificationOverlay(),
+            const Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: _ProximityNotificationOverlay(),
+            ),
           ],
         );
       },
@@ -125,43 +131,34 @@ class _ProximityNotificationOverlay extends StatefulWidget {
   const _ProximityNotificationOverlay();
 
   @override
-  State<_ProximityNotificationOverlay> createState() => _ProximityNotificationOverlayState();
+  State<_ProximityNotificationOverlay> createState() =>
+      _ProximityNotificationOverlayState();
 }
 
-class _ProximityNotificationOverlayState extends State<_ProximityNotificationOverlay> with SingleTickerProviderStateMixin {
+class _ProximityNotificationOverlayState
+    extends State<_ProximityNotificationOverlay>
+    with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
-  late final Animation<Offset> _offsetAnimation;
+  late final Animation<Offset> _slideAnim;
   late final AudioPlayer _audioPlayer;
-  PuntoDeInteres? _lastNearPOI;
+
+  PuntoDeInteres? _nearPOI;
+  bool _isVisible = false;
 
   @override
   void initState() {
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 600),
+      duration: const Duration(milliseconds: 500),
     );
-    _offsetAnimation = Tween<Offset>(
-      begin: const Offset(0, -1.2),
+    _slideAnim = Tween<Offset>(
+      begin: const Offset(0, -1.5),
       end: Offset.zero,
     ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutBack));
-    
+
     _audioPlayer = AudioPlayer();
-
     ProximityService().addListener(_onProximityChange);
-  }
-
-  void _onProximityChange() {
-    final near = ProximityService().nearPOI;
-    if (near != _lastNearPOI) {
-      if (near != null) {
-        _controller.forward();
-        _audioPlayer.play(AssetSource('sounds/princess.mp3')).catchError((_) {});
-      } else {
-        _controller.reverse();
-      }
-      _lastNearPOI = near;
-    }
   }
 
   @override
@@ -172,46 +169,102 @@ class _ProximityNotificationOverlayState extends State<_ProximityNotificationOve
     super.dispose();
   }
 
+  void _onProximityChange() {
+    final near = ProximityService().nearPOI;
+
+    // Only react when the nearby POI changes identity
+    if (near?.id == _nearPOI?.id) return;
+
+    _nearPOI = near;
+
+    if (near != null) {
+      if (!_isVisible) setState(() => _isVisible = true);
+      _controller.forward(from: 0);
+      _audioPlayer
+          .play(AssetSource('sounds/princess.mp3'))
+          .catchError((_) {});
+    } else {
+      _controller.reverse().then((_) {
+        if (mounted) setState(() => _isVisible = false);
+      });
+    }
+  }
+
+  void _dismiss() => _controller.reverse().then((_) {
+        if (mounted) setState(() => _isVisible = false);
+      });
+
+  void _navigateToMap() {
+    _dismiss();
+    HomeShellView.onNavigateToMap?.call();
+  }
+
   @override
   Widget build(BuildContext context) {
-    return SlideTransition(
-      position: _offsetAnimation,
-      child: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          child: Material(
-            elevation: 8,
-            borderRadius: BorderRadius.circular(16),
-            color: AppColors.secondaryMain,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              child: Row(
-                children: [
-                   const Icon(Icons.stars_rounded, color: Colors.white, size: 28),
-                   const SizedBox(width: 12),
-                   Expanded(
-                     child: Column(
-                       mainAxisSize: MainAxisSize.min,
-                       crossAxisAlignment: CrossAxisAlignment.start,
-                       children: [
-                         const Text(
-                           '¡LUGAR CERCANO!',
-                           style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
-                         ),
-                         Text(
-                           _lastNearPOI?.nombre ?? '',
-                           style: const TextStyle(color: Colors.white, fontSize: 15),
-                           maxLines: 1,
-                           overflow: TextOverflow.ellipsis,
-                         ),
-                       ],
-                     ),
-                   ),
-                   IconButton(
-                     onPressed: () => _controller.reverse(),
-                     icon: const Icon(Icons.close, color: Colors.white70, size: 20),
-                   ),
-                ],
+    return IgnorePointer(
+      ignoring: !_isVisible,
+      child: SlideTransition(
+        position: _slideAnim,
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+            child: GestureDetector(
+              onTap: _navigateToMap,
+              child: Material(
+                elevation: 10,
+                borderRadius: BorderRadius.circular(16),
+                color: AppColors.secondaryMain,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 12, 8, 12),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.stars_rounded,
+                          color: Colors.white, size: 26),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              '¡LUGAR CERCANO!',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w800,
+                                fontSize: 12,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                            const SizedBox(height: 1),
+                            Text(
+                              _nearPOI?.nombre ?? '',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      // Tap-hint arrow
+                      const Icon(Icons.explore_rounded,
+                          color: Colors.white70, size: 18),
+                      const SizedBox(width: 4),
+                      IconButton(
+                        onPressed: _dismiss,
+                        icon: const Icon(Icons.close_rounded,
+                            color: Colors.white70, size: 18),
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(
+                            minWidth: 32, minHeight: 32),
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ),
           ),

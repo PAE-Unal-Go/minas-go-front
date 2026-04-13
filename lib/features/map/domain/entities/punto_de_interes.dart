@@ -9,6 +9,7 @@ class PuntoDeInteres {
   final double latitud;
   final double longitud;
   final bool visitado;
+  final String? rarity;
 
   const PuntoDeInteres({
     required this.id,
@@ -21,6 +22,7 @@ class PuntoDeInteres {
     required this.latitud,
     required this.longitud,
     this.visitado = false,
+    this.rarity,
   });
 
   factory PuntoDeInteres.fromMap(Map<String, dynamic> map) {
@@ -35,6 +37,7 @@ class PuntoDeInteres {
       latitud: (map['latitud'] as num).toDouble(),
       longitud: (map['longitud'] as num).toDouble(),
       visitado: map['visitado'] as bool? ?? false,
+      rarity: map['rarity'] as String?,
     );
   }
 }

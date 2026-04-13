@@ -167,16 +167,31 @@ class MapRepositoryImpl implements MapRepository {
   }
 
   @override
-  Future<void> unlockPoi(String userId, int puntoId) async {
+  Future<int> unlockPoi(String userId, int puntoId) async {
     try {
-      await _supabase.from('visitas').upsert(
-        {
-          'usuario_id': userId,
-          'punto_id': puntoId,
-          'fecha_visita': DateTime.now().toIso8601String(),
+      final res = await _supabase.rpc(
+        'registrar_visita',
+        params: {
+          'p_usuario': userId,
+          'p_punto': puntoId,
         },
-        onConflict: 'usuario_id,punto_id',
       );
+      if (res == null) return 0;
+      final map = res is Map
+          ? Map<String, dynamic>.from(res)
+          : (res is List && res.isNotEmpty && res.first is Map)
+              ? Map<String, dynamic>.from(res.first as Map)
+              : null;
+      if (map == null) return 0;
+      for (final key in ['puntos_ganados', 'puntos', 'points_earned', 'points']) {
+        if (map.containsKey(key)) {
+          final v = map[key];
+          if (v is int) return v;
+          if (v is num) return v.toInt();
+          if (v is String) return int.tryParse(v) ?? 0;
+        }
+      }
+      return 0;
     } catch (e) {
       return Future.error('Error al desbloquear punto: $e');
     }

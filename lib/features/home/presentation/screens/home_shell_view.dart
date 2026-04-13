@@ -9,6 +9,10 @@ import 'home_view.dart';
 class HomeShellView extends StatefulWidget {
   const HomeShellView({super.key});
 
+  /// Called externally (e.g. from the proximity notification) to switch to
+  /// the map tab, respecting location-permission checks.
+  static VoidCallback? onNavigateToMap;
+
   @override
   State<HomeShellView> createState() => _HomeShellViewState();
 }
@@ -28,6 +32,18 @@ class _HomeShellViewState extends State<HomeShellView> {
     if (_isInHomeDetail != inDetail) {
       setState(() => _isInHomeDetail = inDetail);
     }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    HomeShellView.onNavigateToMap = () => _onTabSelected(1);
+  }
+
+  @override
+  void dispose() {
+    HomeShellView.onNavigateToMap = null;
+    super.dispose();
   }
 
   Future<void> _onTabSelected(int index) async {
