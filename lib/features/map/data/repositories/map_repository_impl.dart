@@ -147,15 +147,15 @@ class MapRepositoryImpl implements MapRepository {
         final key = entry.key;
         final list = entry.value;
         final visitados = list.where((p) => p.visitado).length;
-        final imageUrl = list.firstWhere(
-          (p) => p.mainImageUrl != null,
-          orElse: () => list.first,
-        ).mainImageUrl;
+        final imageUrl = list
+            .expand((p) => p.imagesUrls)
+            .map((url) => url.trim())
+            .firstWhere((url) => url.isNotEmpty, orElse: () => '');
 
         return Categoria(
           key: key,
           nombre: Categoria.humanNombre(key),
-          imageUrl: imageUrl,
+          imageUrl: imageUrl.isEmpty ? null : imageUrl,
           totalPuntos: list.length,
           visitados: visitados,
         );

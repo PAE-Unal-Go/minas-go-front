@@ -2,7 +2,7 @@ class PuntoDeInteres {
   final int id;
   final String nombre;
   final String? descripcion;
-  final String? mainImageUrl;
+  final List<String> imagesUrls;
   final String categoria;
   final String campus;
   final String universidad;
@@ -15,7 +15,7 @@ class PuntoDeInteres {
     required this.id,
     required this.nombre,
     this.descripcion,
-    this.mainImageUrl,
+    this.imagesUrls = const [],
     required this.categoria,
     required this.campus,
     required this.universidad,
@@ -25,12 +25,29 @@ class PuntoDeInteres {
     this.rarity,
   });
 
+  String? get mainImageUrl => imagesUrls.isNotEmpty ? imagesUrls.first : null;
+
   factory PuntoDeInteres.fromMap(Map<String, dynamic> map) {
+    final rawImages = map['images_urls'];
+    List<String> parsedImages = const [];
+
+    if (rawImages is List) {
+      parsedImages = rawImages
+          .map((e) => e?.toString() ?? '')
+          .where((e) => e.isNotEmpty)
+          .toList();
+    } else {
+      final legacyMainImage = map['main_image_url'] as String?;
+      if (legacyMainImage != null && legacyMainImage.isNotEmpty) {
+        parsedImages = [legacyMainImage];
+      }
+    }
+
     return PuntoDeInteres(
       id: (map['id'] as num).toInt(),
       nombre: map['nombre'] as String,
       descripcion: map['descripcion'] as String?,
-      mainImageUrl: map['main_image_url'] as String?,
+      imagesUrls: parsedImages,
       categoria: map['categoria'] as String,
       campus: map['campus'] as String,
       universidad: map['universidad'] as String? ?? 'UNAL Medellín',

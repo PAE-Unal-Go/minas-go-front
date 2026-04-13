@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../core/widgets/poi_image_gallery.dart';
 import '../../domain/entities/punto_de_interes.dart';
 import '../../domain/entities/categoria.dart';
 import '../../../../core/theme/app_design_system.dart';
@@ -44,8 +45,6 @@ class _PoiBottomSheetState extends State<PoiBottomSheet> {
     final punto = widget.punto;
     final isVisitado = punto.visitado;
     final locked = !isVisitado && !_inRange;
-    final hasImage =
-        punto.mainImageUrl != null && punto.mainImageUrl!.isNotEmpty;
 
     return Container(
       decoration: const BoxDecoration(
@@ -74,7 +73,6 @@ class _PoiBottomSheetState extends State<PoiBottomSheet> {
             punto: punto,
             isVisitado: isVisitado,
             locked: locked,
-            hasImage: hasImage,
           ),
 
           // ── Info ──
@@ -152,13 +150,11 @@ class _PoiImageSection extends StatelessWidget {
   final PuntoDeInteres punto;
   final bool isVisitado;
   final bool locked;
-  final bool hasImage;
 
   const _PoiImageSection({
     required this.punto,
     required this.isVisitado,
     required this.locked,
-    required this.hasImage,
   });
 
   @override
@@ -191,35 +187,13 @@ class _PoiImageSection extends StatelessWidget {
         SizedBox(
           height: 190,
           width: double.infinity,
-          child: ClipRRect(
+          child: PoiImageGallery(
+            imagesUrls: punto.imagesUrls,
+            height: 190,
             borderRadius: locked
                 ? const BorderRadius.vertical(top: Radius.circular(28))
                 : BorderRadius.zero,
-            child: hasImage
-                ? Stack(
-                    fit: StackFit.expand,
-                    children: [
-                      ColorFiltered(
-                        colorFilter: locked
-                            ? const ColorFilter.matrix(blockedGrayMatrix)
-                            : const ColorFilter.mode(
-                                Colors.transparent,
-                                BlendMode.srcOver,
-                              ),
-                        child: Image.network(
-                          punto.mainImageUrl!,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) =>
-                              _Placeholder(locked: locked),
-                        ),
-                      ),
-                      if (locked)
-                        Container(
-                          color: Colors.black.withValues(alpha: 0.78),
-                        ),
-                    ],
-                  )
-                : _Placeholder(locked: locked),
+            locked: locked,
           ),
         ),
         if (locked)

@@ -237,7 +237,11 @@ class _HomeViewState extends State<HomeView> with TickerProviderStateMixin {
         final puntos = _puntosPorCategoria[cat.key] ?? [];
         final cardImageUrl = switch (cat.key) {
           'arte_cultura' => 'assets/images/aula_maxima.jpg',
-          'academico' => 'assets/images/museo_laboratorio.jpg',
+          'museos_laboratorios' => 'assets/images/museo_laboratorio.jpg',
+          'deporte_salud' => 'assets/images/deporte_salud.jpg',
+          'medio_ambiente' => 'assets/images/medio_ambiente.jpg',
+          'servicios' => 'assets/images/servicio.jpg',
+          'academico' => 'assets/images/academico.jpg',
           _ => cat.imageUrl,
         };
 

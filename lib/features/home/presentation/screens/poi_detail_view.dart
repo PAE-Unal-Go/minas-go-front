@@ -10,11 +10,17 @@ import '../../../map/domain/entities/punto_de_interes.dart';
 class PoiDetailView extends StatefulWidget {
   final PuntoDeInteres punto;
   final String categoryName;
+  final String pointName;
+  final String pointDescription;
+  final List<String> imagesUrls;
 
   const PoiDetailView({
     super.key,
     required this.punto,
     required this.categoryName,
+    required this.pointName,
+    required this.pointDescription,
+    this.imagesUrls = const [],
   });
 
   @override
@@ -23,10 +29,32 @@ class PoiDetailView extends StatefulWidget {
 
 class _PoiDetailViewState extends State<PoiDetailView>
     with SingleTickerProviderStateMixin {
+  int _currentImageIndex = 0;
   late final AnimationController _anim;
 
-  String? get _rarity =>
-      widget.punto.visitado ? widget.punto.rarity : null;
+  String? get _rarity => widget.punto.visitado ? widget.punto.rarity : null;
+
+  String get _displayName {
+    return widget.pointName.trim().isNotEmpty
+        ? widget.pointName
+        : widget.punto.nombre;
+  }
+
+  String? get _displayDescription {
+    if (widget.pointDescription.trim().isNotEmpty) {
+      return widget.pointDescription;
+    }
+    return widget.punto.descripcion;
+  }
+
+  List<String> get _images {
+    final merged = [...widget.imagesUrls, ...widget.punto.imagesUrls]
+        .map((u) => u.trim())
+        .where((u) => u.isNotEmpty)
+        .toSet()
+        .toList();
+    return merged;
+  }
 
   @override
   void initState() {
@@ -39,6 +67,7 @@ class _PoiDetailViewState extends State<PoiDetailView>
         _ => const Duration(seconds: 2),
       },
     );
+
     if (_rarity == PoiRarity.important || _rarity == PoiRarity.legendary) {
       _anim.repeat();
     }
@@ -50,15 +79,12 @@ class _PoiDetailViewState extends State<PoiDetailView>
     super.dispose();
   }
 
-  // ── Build ─────────────────────────────────────────────────────────────────
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: _bgColor(_rarity),
       body: Stack(
         children: [
-          // Legendary animated background
           if (_rarity == PoiRarity.legendary)
             AnimatedBuilder(
               animation: _anim,
@@ -67,8 +93,6 @@ class _PoiDetailViewState extends State<PoiDetailView>
                 child: const SizedBox.expand(),
               ),
             ),
-
-          // Important radial glow bg
           if (_rarity == PoiRarity.important)
             Container(
               decoration: const BoxDecoration(
@@ -79,7 +103,6 @@ class _PoiDetailViewState extends State<PoiDetailView>
                 ),
               ),
             ),
-
           SafeArea(
             child: Column(
               children: [
@@ -90,10 +113,10 @@ class _PoiDetailViewState extends State<PoiDetailView>
                     child: Column(
                       children: [
                         _buildCard(),
-                        if (widget.punto.descripcion != null &&
-                            widget.punto.descripcion!.isNotEmpty) ...[
+                        if (_displayDescription != null &&
+                            _displayDescription!.isNotEmpty) ...[
                           const SizedBox(height: 20),
-                          _buildDescriptionBox(),
+                          _buildDescriptionBox(_displayDescription!),
                         ],
                       ],
                     ),
@@ -162,24 +185,30 @@ class _PoiDetailViewState extends State<PoiDetailView>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _image(height: 240),
+            _buildImageGallery(height: 240),
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 18, 20, 22),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(widget.categoryName,
-                      style: const TextStyle(
-                          color: Color(0xFF6A7587),
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600)),
+                  Text(
+                    widget.categoryName,
+                    style: const TextStyle(
+                      color: Color(0xFF6A7587),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                   const SizedBox(height: 6),
-                  Text(widget.punto.nombre,
-                      style: const TextStyle(
-                          color: Color(0xFF091436),
-                          fontSize: 22,
-                          fontWeight: FontWeight.w800,
-                          height: 1.2)),
+                  Text(
+                    _displayName,
+                    style: const TextStyle(
+                      color: Color(0xFF091436),
+                      fontSize: 22,
+                      fontWeight: FontWeight.w800,
+                      height: 1.2,
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -216,8 +245,7 @@ class _PoiDetailViewState extends State<PoiDetailView>
             children: [
               Stack(
                 children: [
-                  _image(height: 250),
-                  // Subtle diagonal sheen
+                  _buildImageGallery(height: 250),
                   Positioned.fill(
                     child: DecoratedBox(
                       decoration: BoxDecoration(
@@ -233,7 +261,6 @@ class _PoiDetailViewState extends State<PoiDetailView>
                       ),
                     ),
                   ),
-                  // Bottom fade
                   Positioned.fill(
                     child: DecoratedBox(
                       decoration: BoxDecoration(
@@ -261,18 +288,24 @@ class _PoiDetailViewState extends State<PoiDetailView>
                       color: const Color(0xFF2DD4BF),
                     ),
                     const SizedBox(height: 12),
-                    Text(widget.punto.nombre,
-                        style: const TextStyle(
-                            color: Color(0xFF091436),
-                            fontSize: 22,
-                            fontWeight: FontWeight.w800,
-                            height: 1.2)),
+                    Text(
+                      _displayName,
+                      style: const TextStyle(
+                        color: Color(0xFF091436),
+                        fontSize: 22,
+                        fontWeight: FontWeight.w800,
+                        height: 1.2,
+                      ),
+                    ),
                     const SizedBox(height: 4),
-                    Text(widget.categoryName,
-                        style: const TextStyle(
-                            color: Color(0xFF6A7587),
-                            fontSize: 13,
-                            fontWeight: FontWeight.w500)),
+                    Text(
+                      widget.categoryName,
+                      style: const TextStyle(
+                        color: Color(0xFF6A7587),
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -298,8 +331,7 @@ class _PoiDetailViewState extends State<PoiDetailView>
           children: [
             Stack(
               children: [
-                _image(height: 250),
-                // Bottom dark fade into card bg
+                _buildImageGallery(height: 250),
                 Positioned.fill(
                   child: DecoratedBox(
                     decoration: BoxDecoration(
@@ -361,7 +393,7 @@ class _PoiDetailViewState extends State<PoiDetailView>
                       ],
                     ).createShader(rect),
                     child: Text(
-                      widget.punto.nombre,
+                      _displayName,
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 22,
@@ -371,11 +403,18 @@ class _PoiDetailViewState extends State<PoiDetailView>
                     ),
                   ),
                   const SizedBox(height: 4),
-                  Text(widget.categoryName,
-                      style: const TextStyle(
-                          color: Color(0xFFFCD34D),
-                          fontSize: 13,
-                          fontWeight: FontWeight.w500)),
+                  const Text(
+                    '',
+                    style: TextStyle(height: 0),
+                  ),
+                  Text(
+                    widget.categoryName,
+                    style: const TextStyle(
+                      color: Color(0xFFFCD34D),
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -412,7 +451,7 @@ class _PoiDetailViewState extends State<PoiDetailView>
             ],
           ),
           padding: const EdgeInsets.all(2.5),
-          child: child!,
+          child: child,
         );
       },
       child: inner,
@@ -432,10 +471,7 @@ class _PoiDetailViewState extends State<PoiDetailView>
         child: Stack(
           fit: StackFit.expand,
           children: [
-            // Full-art image
-            _image(height: double.infinity),
-
-            // Rainbow shimmer diagonal sweep
+            _buildImageGallery(height: double.infinity),
             AnimatedBuilder(
               animation: _anim,
               builder: (_, __) {
@@ -510,7 +546,6 @@ class _PoiDetailViewState extends State<PoiDetailView>
       ),
     );
 
-    // Rotating rainbow border wrapper
     return AnimatedBuilder(
       animation: _anim,
       builder: (_, child) {
@@ -531,8 +566,8 @@ class _PoiDetailViewState extends State<PoiDetailView>
             ),
             boxShadow: [
               BoxShadow(
-                color: const Color(0xFFE879F9).withValues(
-                    alpha: 0.45 + 0.20 * math.sin(t * 2 * math.pi)),
+                color: const Color(0xFFE879F9)
+                    .withValues(alpha: 0.45 + 0.20 * math.sin(t * 2 * math.pi)),
                 blurRadius: 44 + 12 * math.sin(t * 2 * math.pi),
                 spreadRadius: 4,
               ),
@@ -543,7 +578,7 @@ class _PoiDetailViewState extends State<PoiDetailView>
             ],
           ),
           padding: const EdgeInsets.all(3),
-          child: child!,
+          child: child,
         );
       },
       child: inner,
@@ -575,7 +610,6 @@ class _PoiDetailViewState extends State<PoiDetailView>
                 ),
               ),
               const SizedBox(height: 10),
-              // Animated rainbow name
               AnimatedBuilder(
                 animation: _anim,
                 builder: (_, __) {
@@ -600,7 +634,7 @@ class _PoiDetailViewState extends State<PoiDetailView>
                       ],
                     ).createShader(rect),
                     child: Text(
-                      widget.punto.nombre,
+                      _displayName,
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 24,
@@ -645,18 +679,24 @@ class _PoiDetailViewState extends State<PoiDetailView>
           child: const Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text('✦',
-                  style: TextStyle(
-                      color: Color(0xFFE879F9),
-                      fontSize: 13,
-                      fontWeight: FontWeight.w900)),
+              Text(
+                '✦',
+                style: TextStyle(
+                  color: Color(0xFFE879F9),
+                  fontSize: 13,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
               SizedBox(width: 6),
-              Text('LEGENDARIO',
-                  style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 10,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: 1.5)),
+              Text(
+                'LEGENDARIO',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 1.5,
+                ),
+              ),
             ],
           ),
         ),
@@ -664,28 +704,78 @@ class _PoiDetailViewState extends State<PoiDetailView>
     );
   }
 
-  // ─────────────────────────────────────────────────────────────────────────
-  // Shared helpers
-  // ─────────────────────────────────────────────────────────────────────────
-
-  Widget _image({required double height}) {
-    final url = widget.punto.mainImageUrl;
-    Widget img;
-    if (url != null && url.isNotEmpty) {
-      img = url.startsWith('http')
-          ? Image.network(url,
-              fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => _placeholder())
-          : Image.asset(url,
-              fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => _placeholder());
-    } else {
-      img = _placeholder();
+  Widget _buildImageGallery({required double height}) {
+    final images = _images;
+    if (images.isEmpty) {
+      return _buildImageContainer(_placeholder(), height: height);
     }
 
-    return height == double.infinity
-        ? Positioned.fill(child: img)
-        : SizedBox(height: height, width: double.infinity, child: img);
+    if (images.length == 1) {
+      return _buildImageContainer(_buildSingleImage(images.first), height: height);
+    }
+
+    return Stack(
+      children: [
+        SizedBox(
+          height: height == double.infinity ? null : height,
+          width: double.infinity,
+          child: PageView.builder(
+            itemCount: images.length,
+            onPageChanged: (index) {
+              if (!mounted) return;
+              setState(() => _currentImageIndex = index);
+            },
+            itemBuilder: (_, index) => _buildSingleImage(images[index]),
+          ),
+        ),
+        Positioned(
+          bottom: 10,
+          left: 0,
+          right: 0,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: List.generate(
+              images.length,
+              (index) => AnimatedContainer(
+                duration: const Duration(milliseconds: 180),
+                margin: const EdgeInsets.symmetric(horizontal: 3),
+                height: 6,
+                width: index == _currentImageIndex ? 18 : 6,
+                decoration: BoxDecoration(
+                  color: index == _currentImageIndex
+                      ? Colors.white
+                      : Colors.white.withValues(alpha: 0.5),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildImageContainer(Widget child, {required double height}) {
+    if (height == double.infinity) {
+      return Positioned.fill(child: child);
+    }
+    return SizedBox(height: height, width: double.infinity, child: child);
+  }
+
+  Widget _buildSingleImage(String url) {
+    if (url.startsWith('http')) {
+      return Image.network(
+        url,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => _placeholder(),
+      );
+    }
+
+    return Image.asset(
+      url,
+      fit: BoxFit.cover,
+      errorBuilder: (_, __, ___) => _placeholder(),
+    );
   }
 
   Widget _placeholder() {
@@ -717,9 +807,7 @@ class _PoiDetailViewState extends State<PoiDetailView>
     );
   }
 
-  // ── Description section ───────────────────────────────────────────────────
-
-  Widget _buildDescriptionBox() {
+  Widget _buildDescriptionBox(String description) {
     final isDark =
         _rarity == PoiRarity.important || _rarity == PoiRarity.legendary;
     return Container(
@@ -743,7 +831,7 @@ class _PoiDetailViewState extends State<PoiDetailView>
               ],
       ),
       child: Text(
-        widget.punto.descripcion!,
+        description,
         style: TextStyle(
           color: isDark
               ? Colors.white.withValues(alpha: 0.85)
@@ -757,11 +845,6 @@ class _PoiDetailViewState extends State<PoiDetailView>
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Painters
-// ─────────────────────────────────────────────────────────────────────────────
-
-/// Starfield background for legendary screen
 class _StarfieldPainter extends CustomPainter {
   final double t;
   _StarfieldPainter(this.t);
@@ -802,17 +885,21 @@ class _StarfieldPainter extends CustomPainter {
 }
 
 class _Star {
-  final double x, y, phase, radius;
+  final double x;
+  final double y;
+  final double phase;
+  final double radius;
   final Color color;
-  const _Star(
-      {required this.x,
-      required this.y,
-      required this.phase,
-      required this.radius,
-      required this.color});
+
+  const _Star({
+    required this.x,
+    required this.y,
+    required this.phase,
+    required this.radius,
+    required this.color,
+  });
 }
 
-/// Cross-sparkles scattered over the legendary card image
 class _SparklesPainter extends CustomPainter {
   final double t;
   _SparklesPainter(this.t);
@@ -820,8 +907,7 @@ class _SparklesPainter extends CustomPainter {
   static final _rng = math.Random(7);
   static final _positions =
       List.generate(16, (_) => Offset(_rng.nextDouble(), _rng.nextDouble()));
-  static final _phases =
-      List.generate(16, (_) => _rng.nextDouble());
+  static final _phases = List.generate(16, (_) => _rng.nextDouble());
   static const _colors = [
     Color(0xFFFFD93D),
     Color(0xFFE879F9),
@@ -833,16 +919,16 @@ class _SparklesPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     for (int i = 0; i < _positions.length; i++) {
-      final alpha =
-          math.sin((_phases[i] + t) * 2 * math.pi);
+      final alpha = math.sin((_phases[i] + t) * 2 * math.pi);
       if (alpha <= 0) continue;
 
       final pos = Offset(
-          _positions[i].dx * size.width, _positions[i].dy * size.height);
+        _positions[i].dx * size.width,
+        _positions[i].dy * size.height,
+      );
       final r = 1.5 + alpha * 3.0;
       final color = _colors[i % _colors.length];
 
-      // Glowing dot
       canvas.drawCircle(
         pos,
         r,
@@ -851,16 +937,21 @@ class _SparklesPainter extends CustomPainter {
           ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2.5),
       );
 
-      // Cross lines
       final linePaint = Paint()
         ..color = color.withValues(alpha: alpha * 0.65)
         ..strokeWidth = 0.9
         ..strokeCap = StrokeCap.round;
       final len = r * 2.8;
       canvas.drawLine(
-          Offset(pos.dx - len, pos.dy), Offset(pos.dx + len, pos.dy), linePaint);
+        Offset(pos.dx - len, pos.dy),
+        Offset(pos.dx + len, pos.dy),
+        linePaint,
+      );
       canvas.drawLine(
-          Offset(pos.dx, pos.dy - len), Offset(pos.dx, pos.dy + len), linePaint);
+        Offset(pos.dx, pos.dy - len),
+        Offset(pos.dx, pos.dy + len),
+        linePaint,
+      );
     }
   }
 

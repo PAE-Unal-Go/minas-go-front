@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 
 import '../../../../core/theme/app_design_system.dart';
+import '../../../../core/widgets/poi_image_gallery.dart';
 import '../../../../core/utils/poi_rarity.dart';
 import '../../../map/domain/entities/punto_de_interes.dart';
 import 'poi_detail_view.dart';
@@ -92,6 +93,9 @@ class _CategoryPointsViewState extends State<CategoryPointsView> {
                                 builder: (_) => PoiDetailView(
                                   punto: punto,
                                   categoryName: widget.categoryName,
+                                  pointName: punto.nombre,
+                                  pointDescription: punto.descripcion ?? '',
+                                  imagesUrls: punto.imagesUrls,
                                 ),
                               ),
                             );
@@ -460,7 +464,7 @@ class _PointGridTile extends StatelessWidget {
       child: Stack(
         fit: StackFit.expand,
         children: [
-          _PointImage(url: punto.mainImageUrl),
+          _PointImage(urls: punto.imagesUrls),
           if (rarity != null)
             Positioned(
               left: 5,
@@ -522,33 +526,17 @@ class _PointGridTile extends StatelessWidget {
 // ─── Point image helper ───────────────────────────────────────────────────────
 
 class _PointImage extends StatelessWidget {
-  final String? url;
-  const _PointImage({this.url});
+  final List<String> urls;
+  const _PointImage({required this.urls});
 
   @override
   Widget build(BuildContext context) {
-    if (url != null && url!.isNotEmpty) {
-      return url!.startsWith('http')
-          ? Image.network(
-              url!,
-              fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => _placeholder(),
-            )
-          : Image.asset(
-              url!,
-              fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => _placeholder(),
-            );
-    }
-    return _placeholder();
-  }
-
-  Widget _placeholder() {
-    return const DecoratedBox(
-      decoration: BoxDecoration(gradient: AppGradients.primary),
-      child: Center(
-        child: Icon(Icons.image_not_supported_outlined, color: Colors.white),
-      ),
+    return PoiImageGallery(
+      imagesUrls: urls,
+      height: 88,
+      showIndicators: false,
+      enableCarousel: false,
+      borderRadius: BorderRadius.zero,
     );
   }
 }

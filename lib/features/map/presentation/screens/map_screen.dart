@@ -223,7 +223,7 @@ class _MapScreenState extends State<MapScreen>
                   'id': p.id,
                   'nombre': p.nombre,
                   'categoria': p.categoria,
-                  'mainImageUrl': p.mainImageUrl ?? '',
+                  'imagesUrls': p.imagesUrls,
                   'visitado': p.visitado,
                 },
               } as Map<String, dynamic>)

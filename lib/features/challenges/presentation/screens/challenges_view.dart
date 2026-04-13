@@ -106,7 +106,7 @@ class _ChallengesViewState extends State<ChallengesView> {
       final pointImage = ProximityService()
           .allPuntos
           .where((p) => p.nombre == q.pointName)
-          .map((p) => p.mainImageUrl)
+          .expand((p) => p.imagesUrls)
           .cast<String?>()
           .firstWhere(
             (e) => e != null && e.isNotEmpty,

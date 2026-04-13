@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:audioplayers/audioplayers.dart';
+import '../../../../core/widgets/poi_image_gallery.dart';
 import '../../domain/entities/punto_de_interes.dart';
 import '../../domain/entities/categoria.dart';
 import '../../../../core/theme/app_design_system.dart';
@@ -359,7 +360,6 @@ class _PoiUnlockCardState extends State<PoiUnlockCard>
 
   Widget _buildCard() {
     final punto = widget.punto;
-    final hasImage = punto.mainImageUrl != null && punto.mainImageUrl!.isNotEmpty;
 
     return Container(
       width: MediaQuery.of(context).size.width * 0.85,
@@ -374,16 +374,10 @@ class _PoiUnlockCardState extends State<PoiUnlockCard>
             // Image hero section
             Stack(
               children: [
-                SizedBox(
+                PoiImageGallery(
+                  imagesUrls: punto.imagesUrls,
                   height: 220,
-                  width: double.infinity,
-                  child: hasImage
-                      ? Image.network(
-                          punto.mainImageUrl!,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => _imagePlaceholder(),
-                        )
-                      : _imagePlaceholder(),
+                  borderRadius: BorderRadius.zero,
                 ),
                 Positioned.fill(
                   child: DecoratedBox(
