@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -16,7 +18,9 @@ import '../../../map/domain/usecases/validate_answer.dart';
 import '../../../../core/services/proximity_service.dart';
 
 class ChallengesView extends StatefulWidget {
-  const ChallengesView({super.key});
+  const ChallengesView({super.key, this.onAnswerCompleted});
+
+  final VoidCallback? onAnswerCompleted;
 
   @override
   State<ChallengesView> createState() => _ChallengesViewState();
@@ -39,6 +43,7 @@ class _ChallengesViewState extends State<ChallengesView> {
   int _lastPointsEarned = 0;
   bool _lastCorrect = false;
   int _userTotalPoints = 0;
+  Timer? _redirectTimer;
 
   final _repo = MapRepositoryImpl();
   late final GetQuestionForVisitedPoints _getQuestion;
@@ -52,6 +57,20 @@ class _ChallengesViewState extends State<ChallengesView> {
     _getUserTotalPoints = GetUserTotalPoints(_repo);
     _validateAnswer = ValidateAnswer(_repo);
     _loadQuestion();
+  }
+
+  @override
+  void dispose() {
+    _redirectTimer?.cancel();
+    super.dispose();
+  }
+
+  void _scheduleRedirectToHome() {
+    _redirectTimer?.cancel();
+    _redirectTimer = Timer(const Duration(seconds: 2), () {
+      if (!mounted) return;
+      widget.onAnswerCompleted?.call();
+    });
   }
 
   Future<void> _refreshUserPoints() async {
@@ -136,10 +155,6 @@ class _ChallengesViewState extends State<ChallengesView> {
     }
   }
 
-  void _nextQuestion() {
-    _loadQuestion();
-  }
-
   Future<void> _onOptionTap(int index) async {
     if (_answered || _isValidating) return;
 
@@ -165,6 +180,7 @@ class _ChallengesViewState extends State<ChallengesView> {
       });
 
       await _refreshUserPoints();
+      _scheduleRedirectToHome();
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -204,6 +220,15 @@ class _ChallengesViewState extends State<ChallengesView> {
                 bottom: false,
                 child: AnimatedSwitcher(
                   duration: const Duration(milliseconds: 250),
+                  layoutBuilder: (currentChild, previousChildren) {
+                    return Stack(
+                      alignment: Alignment.topCenter,
+                      children: <Widget>[
+                        ...previousChildren,
+                        if (currentChild != null) currentChild,
+                      ],
+                    );
+                  },
                   child: _isLoading
                       ? const Center(
                           child: CircularProgressIndicator(
@@ -254,7 +279,7 @@ class _ChallengesViewState extends State<ChallengesView> {
                             )
                           : SingleChildScrollView(
                               key: ValueKey(_question.id),
-                              padding: const EdgeInsets.fromLTRB(16, 26, 16, 20),
+                              padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.stretch,
                                 children: [
@@ -293,29 +318,6 @@ class _ChallengesViewState extends State<ChallengesView> {
                                           ),
                                   ),
                                   SizedBox(height: 18 + bottomPadding),
-                                  SizedBox(
-                                    width: double.infinity,
-                                    child: FilledButton(
-                                      onPressed: _isValidating
-                                          ? null
-                                          : _nextQuestion,
-                                      style: FilledButton.styleFrom(
-                                        backgroundColor: AppColors.primaryMain,
-                                        foregroundColor: Colors.white,
-                                        padding: const EdgeInsets.symmetric(
-                                            vertical: 15),
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(
-                                              AppRadius.pill),
-                                        ),
-                                      ),
-                                      child: Text(
-                                        _isValidating
-                                            ? 'Validando...'
-                                            : 'Siguiente pregunta',
-                                      ),
-                                    ),
-                                  ),
                                 ],
                               ),
                             ),

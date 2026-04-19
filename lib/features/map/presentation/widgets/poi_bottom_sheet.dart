@@ -107,8 +107,8 @@ class _PoiBottomSheetState extends State<PoiBottomSheet> {
                   ),
                 ),
 
-                // Description – only if visited or in range
-                if (!locked &&
+                // Description – only if visited
+                if (isVisitado &&
                     punto.descripcion != null &&
                     punto.descripcion!.isNotEmpty) ...[
                   const SizedBox(height: 10),
@@ -187,13 +187,23 @@ class _PoiImageSection extends StatelessWidget {
         SizedBox(
           height: 190,
           width: double.infinity,
-          child: PoiImageGallery(
-            imagesUrls: punto.imagesUrls,
-            height: 190,
-            borderRadius: locked
-                ? const BorderRadius.vertical(top: Radius.circular(28))
-                : BorderRadius.zero,
-            locked: locked,
+          child: ColorFiltered(
+            colorFilter: isVisitado
+                ? const ColorFilter.matrix(<double>[
+                    1, 0, 0, 0, 0,
+                    0, 1, 0, 0, 0,
+                    0, 0, 1, 0, 0,
+                    0, 0, 0, 1, 0,
+                  ])
+                : const ColorFilter.matrix(blockedGrayMatrix),
+            child: PoiImageGallery(
+              imagesUrls: punto.imagesUrls,
+              height: 190,
+              borderRadius: locked
+                  ? const BorderRadius.vertical(top: Radius.circular(28))
+                  : BorderRadius.zero,
+              locked: locked,
+            ),
           ),
         ),
         if (locked)
@@ -378,33 +388,6 @@ class _UnlockButton extends StatelessWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _Placeholder extends StatelessWidget {
-  final bool locked;
-  const _Placeholder({this.locked = false});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: locked
-              ? [const Color(0xFF64748B), const Color(0xFF334155)]
-              : [AppColors.primaryMain, AppColors.secondaryMain],
-        ),
-      ),
-      child: Center(
-        child: Icon(
-          locked ? Icons.lock_rounded : Icons.place_rounded,
-          color: Colors.white54,
-          size: 48,
-        ),
       ),
     );
   }

@@ -36,6 +36,8 @@ class _PoiDetailViewState extends State<PoiDetailView>
 
   String? get _rarity => widget.punto.visitado ? widget.punto.rarity : null;
 
+  bool get _isVisitado => widget.punto.visitado;
+
   String get _displayName {
     return widget.pointName.trim().isNotEmpty
         ? widget.pointName
@@ -43,6 +45,7 @@ class _PoiDetailViewState extends State<PoiDetailView>
   }
 
   String? get _displayDescription {
+    if (!_isVisitado) return null;
     if (widget.pointDescription.trim().isNotEmpty) {
       return widget.pointDescription;
     }
@@ -827,19 +830,36 @@ class _PoiDetailViewState extends State<PoiDetailView>
   }
 
   Widget _buildSingleImage(String url) {
+    final image = url.startsWith('http')
+        ? CachedNetworkImage(
+            imageUrl: url,
+            fit: BoxFit.cover,
+            placeholder: (_, __) => _shimmerPlaceholder(),
+            errorWidget: (_, __, ___) => _placeholder(),
+          )
+        : Image.asset(
+            url,
+            fit: BoxFit.cover,
+            errorBuilder: (_, __, ___) => _placeholder(),
+          );
+
     if (url.startsWith('http')) {
-      return CachedNetworkImage(
-        imageUrl: url,
-        fit: BoxFit.cover,
-        placeholder: (_, __) => _shimmerPlaceholder(),
-        errorWidget: (_, __, ___) => _placeholder(),
-      );
+      return _visitadoFilter(image);
     }
 
-    return Image.asset(
-      url,
-      fit: BoxFit.cover,
-      errorBuilder: (_, __, ___) => _placeholder(),
+    return _visitadoFilter(image);
+  }
+
+  Widget _visitadoFilter(Widget child) {
+    if (_isVisitado) return child;
+    return ColorFiltered(
+      colorFilter: const ColorFilter.matrix(<double>[
+        0.2126, 0.7152, 0.0722, 0, 0,
+        0.2126, 0.7152, 0.0722, 0, 0,
+        0.2126, 0.7152, 0.0722, 0, 0,
+        0, 0, 0, 1, 0,
+      ]),
+      child: child,
     );
   }
 

@@ -91,7 +91,10 @@ class _HomeShellViewState extends State<HomeShellView> {
             },
           ),
           const MapScreen(),
-          ChallengesView(key: ValueKey(_challengesSeed)),
+          ChallengesView(
+            key: ValueKey(_challengesSeed),
+            onAnswerCompleted: () => _onTabSelected(0),
+          ),
         ],
       ),
       bottomNavigationBar: AppBottomNavBar(

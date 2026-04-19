@@ -28,6 +28,7 @@ class _PoiUnlockCardState extends State<PoiUnlockCard>
   late final AnimationController _flashController;
   late final AnimationController _flipController;
   late final AnimationController _shimmerController;
+  late final AnimationController _backgroundController;
   late final AudioPlayer _audioPlayer;
 
   late final Animation<double> _flashOpacity;
@@ -56,6 +57,11 @@ class _PoiUnlockCardState extends State<PoiUnlockCard>
     _shimmerController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1500),
+    )..repeat();
+
+    _backgroundController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 5600),
     )..repeat();
 
     _flashOpacity = TweenSequence<double>([
@@ -107,6 +113,7 @@ class _PoiUnlockCardState extends State<PoiUnlockCard>
     _flashController.dispose();
     _flipController.dispose();
     _shimmerController.dispose();
+    _backgroundController.dispose();
     _audioPlayer.dispose();
     super.dispose();
   }
@@ -205,10 +212,10 @@ class _PoiUnlockCardState extends State<PoiUnlockCard>
 
   Widget _buildShimmerParticles() {
     return AnimatedBuilder(
-      animation: _shimmerController,
+      animation: _backgroundController,
       builder: (_, __) {
         return CustomPaint(
-          painter: _RadialRayPainter(_shimmerController.value),
+          painter: _RadialRayPainter(_backgroundController.value),
           child: const SizedBox.expand(),
         );
       },
@@ -557,20 +564,6 @@ class _PoiUnlockCardState extends State<PoiUnlockCard>
     );
   }
 
-  Widget _imagePlaceholder() {
-    return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFF1C2AD8), Color(0xFF2DD4BF)],
-        ),
-      ),
-      child: const Center(
-        child: Icon(Icons.place_rounded, color: Colors.white54, size: 64),
-      ),
-    );
-  }
 }
 
 class _RadialRayPainter extends CustomPainter {

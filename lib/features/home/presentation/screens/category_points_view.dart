@@ -88,6 +88,7 @@ class _CategoryPointsViewState extends State<CategoryPointsView> {
                         final punto = widget.puntos[index];
                         return _PointGridTile(
                           punto: punto,
+                          isVisitado: punto.visitado,
                           onTap: () {
                             Navigator.of(context).push(
                               MaterialPageRoute(
@@ -357,20 +358,25 @@ class _LegendDot extends StatelessWidget {
 
 class _PointGridTile extends StatelessWidget {
   final PuntoDeInteres punto;
-  final VoidCallback onTap;
+  final bool isVisitado;
+  final VoidCallback? onTap;
 
-  const _PointGridTile({required this.punto, required this.onTap});
+  const _PointGridTile({
+    required this.punto,
+    required this.isVisitado,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final rarity = punto.visitado ? punto.rarity : null;
+    final rarity = isVisitado ? punto.rarity : null;
     return _wrapBorder(
       ClipRRect(
         borderRadius: BorderRadius.circular(AppRadius.md),
         child: Material(
           color: Colors.white,
           child: InkWell(
-            onTap: onTap,
+            onTap: isVisitado ? onTap : null,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -476,7 +482,11 @@ class _PointGridTile extends StatelessWidget {
       child: Stack(
         fit: StackFit.expand,
         children: [
-          _PointImage(urls: punto.imagesUrls),
+          _PointImage(urls: punto.imagesUrls, isVisitado: isVisitado),
+          if (!isVisitado)
+            Container(
+              color: Colors.black.withValues(alpha: 0.78),
+            ),
           if (rarity != null)
             Positioned(
               left: 5,
@@ -516,15 +526,15 @@ class _PointGridTile extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.fromLTRB(8, 5, 8, 4),
         child: Text(
-          punto.nombre,
+          isVisitado ? punto.nombre : 'Bloqueado',
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
           style: TextStyle(
-            color: rarity != null
+            color: isVisitado && rarity != null
                 ? AppColors.textPrimary
                 : AppColors.textSecondary,
             fontSize: 11,
-            fontWeight: rarity != null
+            fontWeight: isVisitado && rarity != null
                 ? AppTypography.weightSemiBold
                 : AppTypography.weightMedium,
             height: 1.2,
@@ -539,16 +549,33 @@ class _PointGridTile extends StatelessWidget {
 
 class _PointImage extends StatelessWidget {
   final List<String> urls;
-  const _PointImage({required this.urls});
+  final bool isVisitado;
+
+  const _PointImage({required this.urls, required this.isVisitado});
 
   @override
   Widget build(BuildContext context) {
-    return PoiImageGallery(
-      imagesUrls: urls,
-      height: 78,
-      showIndicators: false,
-      enableCarousel: false,
-      borderRadius: BorderRadius.zero,
+    return ColorFiltered(
+      colorFilter: isVisitado
+          ? const ColorFilter.matrix(<double>[
+              1, 0, 0, 0, 0,
+              0, 1, 0, 0, 0,
+              0, 0, 1, 0, 0,
+              0, 0, 0, 1, 0,
+            ])
+          : const ColorFilter.matrix(<double>[
+              0.2126, 0.7152, 0.0722, 0, 0,
+              0.2126, 0.7152, 0.0722, 0, 0,
+              0.2126, 0.7152, 0.0722, 0, 0,
+              0, 0, 0, 1, 0,
+            ]),
+      child: PoiImageGallery(
+        imagesUrls: urls,
+        height: 78,
+        showIndicators: false,
+        enableCarousel: false,
+        borderRadius: BorderRadius.zero,
+      ),
     );
   }
 }
