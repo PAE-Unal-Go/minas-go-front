@@ -75,7 +75,7 @@ class ProximityService extends ChangeNotifier {
         p.longitud,
       );
 
-      if (dist <= 40.0) { // Match map unlock threshold
+      if (dist <= 15.0) { // Match map unlock threshold 
         if (dist < minDistance) {
           minDistance = dist;
           bestNear = p;
