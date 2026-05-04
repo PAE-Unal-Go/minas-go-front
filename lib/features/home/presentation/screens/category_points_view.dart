@@ -50,6 +50,13 @@ class _CategoryPointsViewState extends State<CategoryPointsView> {
         widget.puntos.isEmpty ? 0.0 : discoveredCount / widget.puntos.length;
     final topInset = MediaQuery.paddingOf(context).top;
 
+    final sortedPuntos = List<PuntoDeInteres>.from(widget.puntos)
+      ..sort((a, b) {
+        if (a.visitado && !b.visitado) return -1;
+        if (!a.visitado && b.visitado) return 1;
+        return a.nombre.compareTo(b.nombre); // Sort alphabetically among same status
+      });
+
     return Scaffold(
       backgroundColor: AppColors.primaryMain,
       body: Column(
@@ -83,9 +90,9 @@ class _CategoryPointsViewState extends State<CategoryPointsView> {
                         crossAxisSpacing: 12,
                         childAspectRatio: 0.80,
                       ),
-                      itemCount: widget.puntos.length,
+                      itemCount: sortedPuntos.length,
                       itemBuilder: (context, index) {
-                        final punto = widget.puntos[index];
+                        final punto = sortedPuntos[index];
                         return _PointGridTile(
                           punto: punto,
                           isVisitado: punto.visitado,

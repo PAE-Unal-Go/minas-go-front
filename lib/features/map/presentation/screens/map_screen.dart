@@ -27,7 +27,7 @@ class MapScreen extends StatefulWidget {
 }
 
 class _MapScreenState extends State<MapScreen>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   // ── Map ──
   MapboxMap? _mapboxMap;
   LocationPoint? _userLocation;
@@ -59,6 +59,7 @@ class _MapScreenState extends State<MapScreen>
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _unlockPoi = UnlockPoi(_repo);
     _audioPlayer = AudioPlayer();
 
@@ -76,11 +77,23 @@ class _MapScreenState extends State<MapScreen>
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     ProximityService().removeListener(_onProximityUpdate);
     _vibrationTimer?.cancel();
     _audioPlayer.dispose();
     _pulseController?.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused || state == AppLifecycleState.inactive) {
+      _vibrationTimer?.cancel();
+    } else if (state == AppLifecycleState.resumed) {
+      if (_isNearAnyUnvisited) {
+        _startProximityVibration();
+      }
+    }
   }
 
   // ─────────────────────────────── Data ────────────────────────────────────
@@ -124,8 +137,6 @@ class _MapScreenState extends State<MapScreen>
       }
     });
 
-    if (_mapboxMap != null) _loadCircleLayer();
-
     if (!_hasCenteredOnUser && _mapboxMap != null && _userLocation != null) {
       _hasCenteredOnUser = true;
       _centerMap();
@@ -142,6 +153,25 @@ class _MapScreenState extends State<MapScreen>
       }
       if ((await Vibration.hasVibrator()) == true) {
         Vibration.vibrate(pattern: [0, 100, 200, 100]);
+      }
+
+      if (mounted) {
+        final nearPoi = ProximityService().nearPOI;
+        final name = nearPoi?.nombre ?? 'un punto';
+        ScaffoldMessenger.of(context)
+          ..hideCurrentSnackBar()
+          ..showSnackBar(
+            SnackBar(
+              content: Text('¡Estás muy cerca de $name! 📍 Tócalo en el mapa para desbloquearlo y obtener tu recompensa.'),
+              duration: const Duration(milliseconds: 1900),
+              backgroundColor: AppColors.secondaryMain,
+              behavior: SnackBarBehavior.floating,
+              margin: const EdgeInsets.only(bottom: 20, left: 16, right: 16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          );
       }
     });
   }
@@ -297,6 +327,9 @@ class _MapScreenState extends State<MapScreen>
       }
       final pointsEarned = await _unlockPoi(userId, punto.id);
       await ProximityService().refreshPuntos();
+      if (mounted && _mapboxMap != null) {
+        await _loadCircleLayer();
+      }
 
       if (mounted) {
         await Navigator.of(context).push(PageRouteBuilder(
