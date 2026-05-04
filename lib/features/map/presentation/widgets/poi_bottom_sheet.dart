@@ -98,14 +98,6 @@ class _PoiBottomSheetState extends State<PoiBottomSheet> {
                     fontWeight: FontWeight.w800,
                   ),
                 ),
-                const SizedBox(height: 3),
-                Text(
-                  '${punto.campus} · ${punto.universidad}',
-                  style: const TextStyle(
-                    color: AppColors.textSecondary,
-                    fontSize: 12,
-                  ),
-                ),
 
                 // Description – only if visited
                 if (isVisitado &&

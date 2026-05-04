@@ -490,24 +490,6 @@ class _PoiUnlockCardState extends State<PoiUnlockCard>
                   ),
                   const SizedBox(height: 10),
                   _buildRarityRow(punto.rarity, widget.pointsEarned),
-                  const SizedBox(height: 10),
-                  Row(
-                    children: [
-                      const Icon(Icons.location_on_rounded,
-                          color: AppColors.secondaryMain, size: 14),
-                      const SizedBox(width: 4),
-                      Expanded(
-                        child: Text(
-                          '${punto.campus} · ${punto.universidad}',
-                          style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.75),
-                            fontSize: 12,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  ),
                   if (punto.descripcion != null && punto.descripcion!.isNotEmpty) ...[
                     const SizedBox(height: 12),
                     Container(
