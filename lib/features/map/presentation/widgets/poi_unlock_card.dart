@@ -62,7 +62,7 @@ class _PoiUnlockCardState extends State<PoiUnlockCard>
 
     _backgroundController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 5600),
+      duration: const Duration(milliseconds: 15000), // Slower rotation
     )..repeat();
 
     _flashOpacity = TweenSequence<double>([

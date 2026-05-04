@@ -175,7 +175,7 @@ class _PoiDetailViewState extends State<PoiDetailView>
 
   // ── Background color ──────────────────────────────────────────────────────
 
-  Color _bgColor(String? rarity) => switch (rarity?.toLowerCase()) {
+  Color _bgColor(String? rarity) => switch (PoiRarity.normalize(rarity)) {
         PoiRarity.basic => const Color(0xFFEDF9F8),
         PoiRarity.important => const Color(0xFF0A0700),
         PoiRarity.legendary => Colors.black,
@@ -184,12 +184,18 @@ class _PoiDetailViewState extends State<PoiDetailView>
 
   // ── Card dispatcher ───────────────────────────────────────────────────────
 
-  Widget _buildCard() => switch (_rarity?.toLowerCase()) {
+  Widget _buildCard() {
+    if (!widget.punto.visitado) {
+      return _lockedCard();
+    }
+    
+    return switch (PoiRarity.normalize(_rarity)) {
         PoiRarity.legendary => _legendaryCard(),
         PoiRarity.important => _importantCard(),
         PoiRarity.basic => _basicCard(),
-        _ => _lockedCard(),
-      };
+        _ => _basicCard(), // fallback instead of locked for unlocked unrecognised rarities
+    };
+  }
 
   // ─────────────────────────────────────────────────────────────────────────
   // LOCKED / plain card

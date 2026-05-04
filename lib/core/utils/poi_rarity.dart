@@ -5,8 +5,17 @@ abstract final class PoiRarity {
   static const String important = 'important';
   static const String legendary = 'legendary';
 
+  static String? normalize(String? rarity) {
+    if (rarity == null) return null;
+    final r = rarity.toLowerCase().replaceAll('á', 'a').replaceAll('é', 'e').replaceAll('í', 'i').replaceAll('ó', 'o').replaceAll('ú', 'u').trim();
+    if (r.startsWith('basic') || r.startsWith('básic')) return basic;
+    if (r.startsWith('import')) return important;
+    if (r.startsWith('legend')) return legendary;
+    return r;
+  }
+
   static Color primaryColor(String? rarity) {
-    return switch (rarity?.toLowerCase()) {
+    return switch (normalize(rarity)) {
       basic => const Color(0xFF2DD4BF),
       important => const Color(0xFFF59E0B),
       legendary => const Color(0xFFE879F9),
@@ -15,7 +24,7 @@ abstract final class PoiRarity {
   }
 
   static String label(String? rarity) {
-    return switch (rarity?.toLowerCase()) {
+    return switch (normalize(rarity)) {
       basic => 'Básico',
       important => 'Importante',
       legendary => 'Legendario',
@@ -26,7 +35,7 @@ abstract final class PoiRarity {
   }
 
   static String symbol(String? rarity) {
-    return switch (rarity?.toLowerCase()) {
+    return switch (normalize(rarity)) {
       basic => '◆',
       important => '◆◆',
       legendary => '✦',
@@ -35,7 +44,7 @@ abstract final class PoiRarity {
   }
 
   static int starCount(String? rarity) {
-    return switch (rarity?.toLowerCase()) {
+    return switch (normalize(rarity)) {
       basic => 1,
       important => 2,
       legendary => 3,
@@ -45,7 +54,7 @@ abstract final class PoiRarity {
 
   /// Colores del borde animado por rareza.
   static List<Color> borderColors(String? rarity) {
-    return switch (rarity?.toLowerCase()) {
+    return switch (normalize(rarity)) {
       basic => const [Color(0xFF2DD4BF), Color(0xFF99F6E4), Color(0xFF2DD4BF)],
       important => const [
           Color(0xFF92400E),
