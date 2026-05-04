@@ -6,6 +6,7 @@ import '../../domain/entities/punto_de_interes.dart';
 import '../../domain/entities/categoria.dart';
 import '../../../../core/theme/app_design_system.dart';
 import '../../../../core/utils/poi_rarity.dart';
+import '../../../home/presentation/screens/poi_detail_view.dart';
 
 class PoiUnlockCard extends StatefulWidget {
   final PuntoDeInteres punto;
@@ -515,6 +516,42 @@ class _PoiUnlockCardState extends State<PoiUnlockCard>
                   ],
                   const SizedBox(height: 20),
                   // Close button
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        widget.onClose();
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => PoiDetailView(
+                              punto: punto,
+                              categoryName: Categoria.humanNombre(punto.categoria),
+                              pointName: punto.nombre,
+                              pointDescription: punto.descripcion ?? '',
+                              imagesUrls: punto.imagesUrls,
+                            ),
+                          ),
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.white,
+                        foregroundColor: AppColors.secondaryMain,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        elevation: 0,
+                      ),
+                      child: const Text(
+                        'Ver detalles',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(

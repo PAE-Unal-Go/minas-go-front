@@ -3,6 +3,7 @@ import '../../../../core/widgets/poi_image_gallery.dart';
 import '../../domain/entities/punto_de_interes.dart';
 import '../../domain/entities/categoria.dart';
 import '../../../../core/theme/app_design_system.dart';
+import '../../../home/presentation/screens/poi_detail_view.dart';
 
 const double proximityThresholdMeters = 40.0;
 
@@ -124,6 +125,36 @@ class _PoiBottomSheetState extends State<PoiBottomSheet> {
                     inRange: _inRange,
                     isUnlocking: _isUnlocking,
                     onUnlock: _triggerUnlock,
+                  )
+                else
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        // Import correct file in headers if not present
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => PoiDetailView(
+                              punto: punto,
+                              categoryName: Categoria.humanNombre(punto.categoria),
+                              pointName: punto.nombre,
+                              pointDescription: punto.descripcion ?? '',
+                              imagesUrls: punto.imagesUrls,
+                            ),
+                          ),
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.secondaryLight,
+                        foregroundColor: AppColors.textPrimary,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        elevation: 0,
+                      ),
+                      child: const Text('Ver detalles', style: TextStyle(fontWeight: FontWeight.bold)),
+                    ),
                   ),
               ],
             ),
