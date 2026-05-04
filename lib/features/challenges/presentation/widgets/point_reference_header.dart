@@ -1,5 +1,4 @@
-import 'package:flutter/material.dart';
-
+import 'package:flutter/material.dart';import 'package:cached_network_image/cached_network_image.dart';
 import '../../../../../core/theme/app_design_system.dart';
 import '../models/challenge_question.dart';
 
@@ -60,10 +59,16 @@ class PointReferenceHeader extends StatelessWidget {
     }
 
     if (imageUrl.startsWith('http')) {
-      return Image.network(
-        imageUrl,
+      return CachedNetworkImage(
+        imageUrl: imageUrl,
         fit: BoxFit.cover,
-        errorBuilder: (context, error, stackTrace) => _buildPlaceholder(),
+        errorWidget: (context, url, error) => _buildPlaceholder(),
+        placeholder: (context, url) => Container(
+          color: Colors.grey[200],
+          child: const Center(
+            child: CircularProgressIndicator(strokeWidth: 2),
+          ),
+        ),
       );
     }
 

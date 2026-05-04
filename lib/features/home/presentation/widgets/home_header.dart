@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 import '../../../../core/theme/app_design_system.dart';
 import 'sparkle_star_badge.dart';
@@ -37,11 +38,18 @@ class HomeHeader extends StatelessWidget {
             ),
             child: ClipOval(
               child: userAvatar != null
-                  ? Image.network(
-                      userAvatar!,
+                  ? CachedNetworkImage(
+                      imageUrl: userAvatar!,
                       fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) =>
-                          _buildAvatarFallback(),
+                      errorWidget: (context, url, error) => _buildAvatarFallback(),
+                      placeholder: (context, url) => Container(
+                        color: Colors.grey[200],
+                        child: const Center(
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                          ),
+                        ),
+                      ),
                     )
                   : _buildAvatarFallback(),
             ),
