@@ -211,7 +211,11 @@ class _MapScreenState extends State<MapScreen>
   void _onMapCreated(MapboxMap mapboxMap) {
     _mapboxMap = mapboxMap;
     mapboxMap.location.updateSettings(
-      LocationComponentSettings(enabled: true, pulsingEnabled: true),
+      LocationComponentSettings(
+        enabled: true,
+        pulsingEnabled: true,
+        puckBearingEnabled: true,
+      ),
     );
     _centerMap();
   }
