@@ -87,7 +87,8 @@ class _MapScreenState extends State<MapScreen>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.paused || state == AppLifecycleState.inactive) {
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.inactive) {
       _vibrationTimer?.cancel();
     } else if (state == AppLifecycleState.resumed) {
       if (_isNearAnyUnvisited) {
@@ -124,8 +125,8 @@ class _MapScreenState extends State<MapScreen>
         latitude: pos.latitude,
         longitude: pos.longitude,
       );
-      final isNear = _puntos.any(
-          (p) => !p.visitado && _distanceTo(p) <= 5.0); // 5 meters for notification
+      final isNear = _puntos.any((p) =>
+          !p.visitado && _distanceTo(p) <= 5.0); // 5 meters for notification
       if (isNear != _isNearAnyUnvisited) {
         _isNearAnyUnvisited = isNear;
         if (_isNearAnyUnvisited) {
@@ -139,7 +140,9 @@ class _MapScreenState extends State<MapScreen>
 
     if (!_hasCenteredOnUser && _mapboxMap != null && _userLocation != null) {
       _hasCenteredOnUser = true;
-      _centerMap();
+      unawaited(
+        _centerMap(requestLocationIfMissing: false, showError: false),
+      );
     }
   }
 
@@ -162,7 +165,8 @@ class _MapScreenState extends State<MapScreen>
           ..hideCurrentSnackBar()
           ..showSnackBar(
             SnackBar(
-              content: Text('¡Estás muy cerca de $name! 📍 Tócalo en el mapa para desbloquearlo y obtener tu recompensa.'),
+              content: Text(
+                  '¡Estás muy cerca de $name! 📍 Tócalo en el mapa para desbloquearlo y obtener tu recompensa.'),
               duration: const Duration(milliseconds: 1900),
               backgroundColor: AppColors.secondaryMain,
               behavior: SnackBarBehavior.floating,
@@ -217,7 +221,7 @@ class _MapScreenState extends State<MapScreen>
         puckBearingEnabled: true,
       ),
     );
-    _centerMap();
+    unawaited(_centerMap(requestLocationIfMissing: false, showError: false));
   }
 
   void _onStyleLoaded(StyleLoadedEventData _) {
@@ -229,8 +233,7 @@ class _MapScreenState extends State<MapScreen>
     try {
       await registerMapIcons(_mapboxMap!);
       await _loadCircleLayer();
-    } catch (_) {
-    }
+    } catch (_) {}
   }
 
   Future<void> _loadCircleLayer() async {
@@ -268,19 +271,66 @@ class _MapScreenState extends State<MapScreen>
       );
       await _mapboxMap!.style.addStyleLayer(buildCircleLayerJson(), null);
       await _mapboxMap!.style.addStyleLayer(buildSymbolLayerJson(), null);
-    } catch (_) {
-    }
+    } catch (_) {}
   }
 
-  void _centerMap() {
-    if (_mapboxMap == null || _userLocation == null) return;
-    _mapboxMap!.setCamera(CameraOptions(
+  Future<void> _centerMap({
+    bool requestLocationIfMissing = true,
+    bool showError = true,
+  }) async {
+    final map = _mapboxMap;
+    if (map == null) return;
+
+    LocationPoint? target = _userLocation;
+    final streamPosition = ProximityService().currentPosition;
+    if (target == null && streamPosition != null) {
+      target = LocationPoint(
+        latitude: streamPosition.latitude,
+        longitude: streamPosition.longitude,
+      );
+      if (mounted) setState(() => _userLocation = target);
+    }
+
+    if (target == null && requestLocationIfMissing) {
+      try {
+        final current = await _repo.getCurrentLocation();
+        if (!mounted) return;
+        setState(() => _userLocation = current);
+        target = current;
+      } catch (_) {
+        if (showError && mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'No se pudo centrar. Verifica permiso de ubicación y GPS.',
+              ),
+              backgroundColor: AppColors.error,
+            ),
+          );
+        }
+        return;
+      }
+    }
+
+    if (target == null) return;
+
+    final camera = CameraOptions(
       center: Point(
-        coordinates:
-            Position(_userLocation!.longitude, _userLocation!.latitude),
+        coordinates: Position(target.longitude, target.latitude),
       ),
-      zoom: 15.5,
-    ));
+      zoom: 18.5,
+      bearing: 0,
+      pitch: 0,
+    );
+
+    try {
+      await map.flyTo(
+        camera,
+        MapAnimationOptions(duration: 1100, startDelay: 0),
+      );
+    } catch (_) {
+      map.setCamera(camera);
+    }
   }
 
   // ─────────────────────────────── Tap / Unlock ────────────────────────────
@@ -303,8 +353,7 @@ class _MapScreenState extends State<MapScreen>
       final punto =
           _puntos.firstWhere((p) => p.id == id, orElse: () => _puntos.first);
       _showPoiBottomSheet(punto);
-    } catch (_) {
-    }
+    } catch (_) {}
   }
 
   void _showPoiBottomSheet(PuntoDeInteres punto) {
@@ -397,7 +446,7 @@ class _MapScreenState extends State<MapScreen>
               styleUri: MapboxStyles.MAPBOX_STREETS,
             ),
       floatingActionButton: FloatingActionButton(
-        onPressed: _centerMap,
+        onPressed: () => _centerMap(),
         backgroundColor: AppColors.primaryMain,
         child: const Icon(Icons.my_location, color: Colors.white),
       ),

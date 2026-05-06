@@ -3,6 +3,7 @@ import 'dart:ui';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../../../core/theme/app_design_system.dart';
 import '../../../../core/utils/poi_rarity.dart';
@@ -101,8 +102,14 @@ class _PoiDetailViewState extends State<PoiDetailView>
 
   @override
   Widget build(BuildContext context) {
+    final useDark = _rarity != null;
+    final topInset = MediaQuery.paddingOf(context).top;
+    final topContentPadding = topInset + kToolbarHeight + 8;
+
     return Scaffold(
+      extendBodyBehindAppBar: true,
       backgroundColor: _bgColor(_rarity),
+      appBar: _buildTransparentAppBar(useDark),
       body: Stack(
         children: [
           if (_rarity == PoiRarity.legendary)
@@ -127,12 +134,12 @@ class _PoiDetailViewState extends State<PoiDetailView>
               ),
             ),
           SafeArea(
+            top: false,
             child: Column(
               children: [
-                _buildAppBar(),
                 Expanded(
                   child: SingleChildScrollView(
-                    padding: const EdgeInsets.fromLTRB(20, 4, 20, 80),
+                    padding: EdgeInsets.fromLTRB(20, topContentPadding, 20, 80),
                     child: Column(
                       children: [
                         _buildCard(),
@@ -155,20 +162,27 @@ class _PoiDetailViewState extends State<PoiDetailView>
 
   // ── App bar ───────────────────────────────────────────────────────────────
 
-  Widget _buildAppBar() {
-    final useDark = _rarity != null;
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(4, 8, 16, 0),
-      child: Row(
-        children: [
-          IconButton(
-            icon: Icon(
-              Icons.arrow_back_ios_new_rounded,
-              color: useDark ? Colors.white : AppColors.textPrimary,
+  PreferredSizeWidget _buildTransparentAppBar(bool useDark) {
+    return AppBar(
+      backgroundColor: Colors.transparent,
+      elevation: 0,
+      scrolledUnderElevation: 0,
+      shadowColor: Colors.transparent,
+      surfaceTintColor: Colors.transparent,
+      forceMaterialTransparency: true,
+      systemOverlayStyle: useDark
+          ? SystemUiOverlayStyle.light.copyWith(
+              statusBarColor: Colors.transparent,
+            )
+          : SystemUiOverlayStyle.dark.copyWith(
+              statusBarColor: Colors.transparent,
             ),
-            onPressed: () => Navigator.of(context).pop(),
-          ),
-        ],
+      leading: IconButton(
+        icon: Icon(
+          Icons.arrow_back_ios_new_rounded,
+          color: useDark ? Colors.white : AppColors.textPrimary,
+        ),
+        onPressed: () => Navigator.of(context).pop(),
       ),
     );
   }

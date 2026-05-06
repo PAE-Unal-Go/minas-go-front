@@ -78,6 +78,7 @@ class _HomeShellViewState extends State<HomeShellView> {
         (_currentIndex == 0 && _isInHomeDetail) ? -1 : _currentIndex;
 
     return Scaffold(
+      extendBody: true,
       body: IndexedStack(
         index: _currentIndex,
         children: [
@@ -177,4 +178,3 @@ class _HomeNavigatorObserver extends NavigatorObserver {
     _notifyDepth();
   }
 }
-

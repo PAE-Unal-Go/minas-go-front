@@ -18,6 +18,7 @@ class AppBottomNavBar extends StatelessWidget {
     final extraBottom = bottomInset > 14 ? bottomInset - 14 : 4.0;
 
     return Container(
+      clipBehavior: Clip.antiAlias,
       height: 68 + extraBottom,
       decoration: const BoxDecoration(
         color: AppColors.background,
