@@ -13,11 +13,11 @@ class ProximityService extends ChangeNotifier {
 
   final _repo = MapRepositoryImpl();
   StreamSubscription<geo.Position>? _positionSub;
-  
+
   List<PuntoDeInteres> _allPuntos = [];
   geo.Position? _currentPosition;
   PuntoDeInteres? _nearPOI;
-  
+
   final Set<int> _notifiedIds = {};
   bool _isInitialized = false;
 
@@ -29,7 +29,7 @@ class ProximityService extends ChangeNotifier {
   /// Loads POIs and starts the location stream.
   Future<void> init() async {
     if (_isInitialized) return;
-    
+
     await refreshPuntos();
     _startLocationStream();
     _isInitialized = true;
@@ -39,7 +39,7 @@ class ProximityService extends ChangeNotifier {
   Future<void> refreshPuntos() async {
     final userId = Supabase.instance.client.auth.currentUser?.id;
     if (userId == null) return;
-    
+
     _allPuntos = await _repo.getPuntosConVisita(userId);
     _checkProximity();
     notifyListeners();
@@ -55,6 +55,11 @@ class ProximityService extends ChangeNotifier {
     ).listen((pos) {
       _currentPosition = pos;
       _checkProximity();
+      notifyListeners();
+    }, onError: (_) {
+      // Keep the app functional if location permission is denied/revoked.
+      _currentPosition = null;
+      _nearPOI = null;
       notifyListeners();
     });
   }
@@ -75,7 +80,8 @@ class ProximityService extends ChangeNotifier {
         p.longitud,
       );
 
-      if (dist <= 5.0) { // 5 meters for notification/near warning
+      if (dist <= 5.0) {
+        // 5 meters for notification/near warning
         if (dist < minDistance) {
           minDistance = dist;
           bestNear = p;

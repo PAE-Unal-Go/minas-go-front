@@ -188,12 +188,13 @@ class _PoiDetailViewState extends State<PoiDetailView>
     if (!widget.punto.visitado) {
       return _lockedCard();
     }
-    
+
     return switch (PoiRarity.normalize(_rarity)) {
-        PoiRarity.legendary => _legendaryCard(),
-        PoiRarity.important => _importantCard(),
-        PoiRarity.basic => _basicCard(),
-        _ => _basicCard(), // fallback instead of locked for unlocked unrecognised rarities
+      PoiRarity.legendary => _legendaryCard(),
+      PoiRarity.important => _importantCard(),
+      PoiRarity.basic => _basicCard(),
+      _ =>
+        _basicCard(), // fallback instead of locked for unlocked unrecognised rarities
     };
   }
 
@@ -275,8 +276,8 @@ class _PoiDetailViewState extends State<PoiDetailView>
               Stack(
                 children: [
                   _buildImageGallery(height: 250),
-                  IgnorePointer(
-                    child: Positioned.fill(
+                  Positioned.fill(
+                    child: IgnorePointer(
                       child: DecoratedBox(
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
@@ -292,8 +293,8 @@ class _PoiDetailViewState extends State<PoiDetailView>
                       ),
                     ),
                   ),
-                  IgnorePointer(
-                    child: Positioned.fill(
+                  Positioned.fill(
+                    child: IgnorePointer(
                       child: DecoratedBox(
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
@@ -365,8 +366,8 @@ class _PoiDetailViewState extends State<PoiDetailView>
             Stack(
               children: [
                 _buildImageGallery(height: 250),
-                IgnorePointer(
-                  child: Positioned.fill(
+                Positioned.fill(
+                  child: IgnorePointer(
                     child: DecoratedBox(
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
@@ -398,9 +399,11 @@ class _PoiDetailViewState extends State<PoiDetailView>
                                 end: Alignment(sweep + 0.5, 1),
                                 colors: [
                                   Colors.transparent,
-                                  const Color(0xFFF59E0B).withValues(alpha: 0.30),
+                                  const Color(0xFFF59E0B)
+                                      .withValues(alpha: 0.30),
                                   Colors.white.withValues(alpha: 0.22),
-                                  const Color(0xFFFEF08A).withValues(alpha: 0.30),
+                                  const Color(0xFFFEF08A)
+                                      .withValues(alpha: 0.30),
                                   Colors.transparent,
                                 ],
                               ),
@@ -793,14 +796,16 @@ class _PoiDetailViewState extends State<PoiDetailView>
     );
   }
 
-  Widget _buildImageGallery({required double height, bool showIndicators = true}) {
+  Widget _buildImageGallery(
+      {required double height, bool showIndicators = true}) {
     final images = _images;
     if (images.isEmpty) {
       return _buildImageContainer(_placeholder(), height: height);
     }
 
     if (images.length == 1) {
-      return _buildImageContainer(_buildSingleImage(images.first), height: height);
+      return _buildImageContainer(_buildSingleImage(images.first),
+          height: height);
     }
 
     return Stack(
@@ -860,10 +865,26 @@ class _PoiDetailViewState extends State<PoiDetailView>
     if (_isVisitado) return child;
     return ColorFiltered(
       colorFilter: const ColorFilter.matrix(<double>[
-        0.2126, 0.7152, 0.0722, 0, 0,
-        0.2126, 0.7152, 0.0722, 0, 0,
-        0.2126, 0.7152, 0.0722, 0, 0,
-        0, 0, 0, 1, 0,
+        0.2126,
+        0.7152,
+        0.0722,
+        0,
+        0,
+        0.2126,
+        0.7152,
+        0.0722,
+        0,
+        0,
+        0.2126,
+        0.7152,
+        0.0722,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
       ]),
       child: child,
     );
