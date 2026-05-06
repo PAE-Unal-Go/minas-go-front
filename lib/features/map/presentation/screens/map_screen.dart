@@ -126,7 +126,7 @@ class _MapScreenState extends State<MapScreen>
         longitude: pos.longitude,
       );
       final isNear = _puntos.any((p) =>
-          !p.visitado && _distanceTo(p) <= 5.0); // 5 meters for notification
+          !p.visitado && _distanceTo(p) <= 8.0); // 8m: same as unlock threshold
       if (isNear != _isNearAnyUnvisited) {
         _isNearAnyUnvisited = isNear;
         if (_isNearAnyUnvisited) {

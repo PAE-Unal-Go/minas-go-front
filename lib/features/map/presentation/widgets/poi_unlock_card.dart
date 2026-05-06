@@ -132,7 +132,7 @@ class _PoiUnlockCardState extends State<PoiUnlockCard>
                 center: Alignment.center,
                 radius: 1.2,
                 colors: switch (widget.punto.rarity?.toLowerCase()) {
-                  PoiRarity.important => [
+                  PoiRarity.epic => [
                       const Color(0xFF3D2000),
                       const Color(0xFF1A0E00),
                       Colors.black,
@@ -301,7 +301,7 @@ class _PoiUnlockCardState extends State<PoiUnlockCard>
 
   BoxDecoration _rarityCardDecoration(String? rarity) {
     return switch (rarity?.toLowerCase()) {
-      PoiRarity.important => BoxDecoration(
+      PoiRarity.epic => BoxDecoration(
           borderRadius: BorderRadius.circular(28),
           gradient: const LinearGradient(
             begin: Alignment.topLeft,

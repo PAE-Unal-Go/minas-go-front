@@ -5,7 +5,7 @@ import '../../domain/entities/categoria.dart';
 import '../../../../core/theme/app_design_system.dart';
 import '../../../home/presentation/screens/poi_detail_view.dart';
 
-const double proximityThresholdMeters = 3.0;
+const double proximityThresholdMeters = 8.0;
 
 class PoiBottomSheet extends StatefulWidget {
   final PuntoDeInteres punto;

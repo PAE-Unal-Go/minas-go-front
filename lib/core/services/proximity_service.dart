@@ -80,8 +80,8 @@ class ProximityService extends ChangeNotifier {
         p.longitud,
       );
 
-      if (dist <= 5.0) {
-        // 5 meters for notification/near warning
+      if (dist <= 8.0) {
+        // 8m: matches POI unlock proximity
         if (dist < minDistance) {
           minDistance = dist;
           bestNear = p;

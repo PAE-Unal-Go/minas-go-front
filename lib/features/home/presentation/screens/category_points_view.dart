@@ -402,7 +402,7 @@ class _PointGridTile extends StatelessWidget {
 
   Widget _wrapBorder(Widget child, String? rarity) {
     return switch (rarity?.toLowerCase()) {
-      PoiRarity.basic => Container(
+      PoiRarity.singular => Container(
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(AppRadius.md + 1.5),
             color: const Color(0xFF2DD4BF),
@@ -417,7 +417,7 @@ class _PointGridTile extends StatelessWidget {
           padding: const EdgeInsets.all(1.5),
           child: child,
         ),
-      PoiRarity.important => Container(
+      PoiRarity.epic => Container(
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(AppRadius.md + 1.5),
             gradient: const LinearGradient(

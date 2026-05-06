@@ -69,7 +69,7 @@ class _PoiDetailViewState extends State<PoiDetailView>
       vsync: this,
       duration: switch (_rarity?.toLowerCase()) {
         PoiRarity.legendary => const Duration(milliseconds: 1800),
-        PoiRarity.important => const Duration(milliseconds: 2400),
+        PoiRarity.epic => const Duration(milliseconds: 2400),
         _ => const Duration(seconds: 2),
       },
     );
@@ -80,7 +80,7 @@ class _PoiDetailViewState extends State<PoiDetailView>
       value: 1.0,
     );
 
-    if (_rarity == PoiRarity.important || _rarity == PoiRarity.legendary) {
+    if (_rarity == PoiRarity.epic || _rarity == PoiRarity.legendary) {
       _anim.repeat();
       // Stop shimmer after 3 seconds with a graceful fade-out
       Future.delayed(const Duration(seconds: 3), () {
@@ -123,7 +123,7 @@ class _PoiDetailViewState extends State<PoiDetailView>
                 ),
               ),
             ),
-          if (_rarity == PoiRarity.important)
+          if (_rarity == PoiRarity.epic)
             Container(
               decoration: const BoxDecoration(
                 gradient: RadialGradient(
@@ -190,8 +190,8 @@ class _PoiDetailViewState extends State<PoiDetailView>
   // ── Background color ──────────────────────────────────────────────────────
 
   Color _bgColor(String? rarity) => switch (PoiRarity.normalize(rarity)) {
-        PoiRarity.basic => const Color(0xFFEDF9F8),
-        PoiRarity.important => const Color(0xFF0A0700),
+        PoiRarity.singular => const Color(0xFFEDF9F8),
+        PoiRarity.epic => const Color(0xFF0A0700),
         PoiRarity.legendary => Colors.black,
         _ => const Color(0xFFE7E8EE),
       };
@@ -205,8 +205,8 @@ class _PoiDetailViewState extends State<PoiDetailView>
 
     return switch (PoiRarity.normalize(_rarity)) {
       PoiRarity.legendary => _legendaryCard(),
-      PoiRarity.important => _importantCard(),
-      PoiRarity.basic => _basicCard(),
+      PoiRarity.epic => _importantCard(),
+      PoiRarity.singular => _basicCard(),
       _ =>
         _basicCard(), // fallback instead of locked for unlocked unrecognised rarities
     };
@@ -332,7 +332,7 @@ class _PoiDetailViewState extends State<PoiDetailView>
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     _rarityChip(
-                      label: '◆  BÁSICO',
+                      label: '◆  SINGULAR',
                       color: const Color(0xFF2DD4BF),
                     ),
                     const SizedBox(height: 12),
@@ -436,7 +436,7 @@ class _PoiDetailViewState extends State<PoiDetailView>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _rarityChip(
-                    label: '◆◆  IMPORTANTE',
+                    label: '◆◆  ÉPICO',
                     color: const Color(0xFFF59E0B),
                   ),
                   const SizedBox(height: 12),
@@ -916,14 +916,14 @@ class _PoiDetailViewState extends State<PoiDetailView>
               begin: Alignment(math.sin(t) - 0.5, 0),
               end: Alignment(math.sin(t) + 0.5, 0),
               colors: [
-                switch (_rarity?.toLowerCase()) {
-                  'legendary' => const Color(0xFF1A0030),
-                  'important' => const Color(0xFF1A0E00),
+                switch (PoiRarity.normalize(_rarity)) {
+                  PoiRarity.legendary => const Color(0xFF1A0030),
+                  PoiRarity.epic => const Color(0xFF1A0E00),
                   _ => const Color(0xFFD0D4E0),
                 },
-                switch (_rarity?.toLowerCase()) {
-                  'legendary' => const Color(0xFF2D0050),
-                  'important' => const Color(0xFF2D1A00),
+                switch (PoiRarity.normalize(_rarity)) {
+                  PoiRarity.legendary => const Color(0xFF2D0050),
+                  PoiRarity.epic => const Color(0xFF2D1A00),
                   _ => const Color(0xFFEBEEF5),
                 },
               ],
@@ -966,7 +966,7 @@ class _PoiDetailViewState extends State<PoiDetailView>
 
   Widget _buildDescriptionBox(String description) {
     final isDark =
-        _rarity == PoiRarity.important || _rarity == PoiRarity.legendary;
+        _rarity == PoiRarity.epic || _rarity == PoiRarity.legendary;
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
