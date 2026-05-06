@@ -445,10 +445,15 @@ class _MapScreenState extends State<MapScreen>
               ),
               styleUri: MapboxStyles.MAPBOX_STREETS,
             ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _centerMap(),
-        backgroundColor: AppColors.primaryMain,
-        child: const Icon(Icons.my_location, color: Colors.white),
+      floatingActionButton: Padding(
+        padding: EdgeInsets.only(
+          bottom: 72 + MediaQuery.paddingOf(context).bottom,
+        ),
+        child: FloatingActionButton(
+          onPressed: () => _centerMap(),
+          backgroundColor: AppColors.primaryMain,
+          child: const Icon(Icons.my_location, color: Colors.white),
+        ),
       ),
     );
   }
