@@ -21,11 +21,19 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^5.0.0
+  flutter_launcher_icons: ^0.13.1
 
 flutter:
   uses-material-design: true
+
   assets:
     - assets/images/
     - assets/images/map_points/
     - assets/images/marker.png
     - assets/sounds/
+
+# Icon configuration
+flutter_icons:
+  android: true
+  ios: true
+  image_path: "assets/images/app_icon.png"
