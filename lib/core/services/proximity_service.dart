@@ -1,5 +1,5 @@
 import 'dart:async';
-import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:geolocator/geolocator.dart' as geo;
 import '../../../features/map/domain/entities/punto_de_interes.dart';
 import '../../../features/map/data/repositories/map_repository_impl.dart';
@@ -48,10 +48,7 @@ class ProximityService extends ChangeNotifier {
   void _startLocationStream() {
     _positionSub?.cancel();
     _positionSub = geo.Geolocator.getPositionStream(
-      locationSettings: const geo.LocationSettings(
-        accuracy: geo.LocationAccuracy.high,
-        distanceFilter: 0, // No filter for max responsiveness
-      ),
+      locationSettings: _buildLocationSettings(),
     ).listen((pos) {
       _currentPosition = pos;
       _checkProximity();
@@ -62,6 +59,40 @@ class ProximityService extends ChangeNotifier {
       _nearPOI = null;
       notifyListeners();
     });
+  }
+
+  geo.LocationSettings _buildLocationSettings() {
+    const accuracy = geo.LocationAccuracy.bestForNavigation;
+    const distanceFilter = 0;
+
+    if (kIsWeb) {
+      return const geo.LocationSettings(
+        accuracy: accuracy,
+        distanceFilter: distanceFilter,
+      );
+    }
+
+    switch (defaultTargetPlatform) {
+      case TargetPlatform.android:
+        return geo.AndroidSettings(
+          accuracy: accuracy,
+          distanceFilter: distanceFilter,
+          intervalDuration: const Duration(seconds: 1),
+        );
+      case TargetPlatform.iOS:
+      case TargetPlatform.macOS:
+        return geo.AppleSettings(
+          accuracy: accuracy,
+          distanceFilter: distanceFilter,
+          activityType: geo.ActivityType.otherNavigation,
+          pauseLocationUpdatesAutomatically: false,
+        );
+      default:
+        return const geo.LocationSettings(
+          accuracy: accuracy,
+          distanceFilter: distanceFilter,
+        );
+    }
   }
 
   void _checkProximity() {
