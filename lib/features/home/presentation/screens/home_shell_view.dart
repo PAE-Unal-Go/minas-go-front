@@ -1,7 +1,13 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart' as geo;
 
 import '../../../challenges/presentation/screens/challenges_view.dart';
+import '../../../facts/fact_unlock_notifier.dart';
+import '../../../facts/domain/entities/university_fact.dart';
+import '../../../facts/presentation/screens/facts_view.dart';
+import '../../../facts/presentation/widgets/fact_unlock_banner.dart';
 import '../../../map/presentation/screens/map_screen.dart';
 import '../widgets/app_bottom_nav_bar.dart';
 import 'home_view.dart';
@@ -25,6 +31,8 @@ class _HomeShellViewState extends State<HomeShellView> {
   int _currentIndex = 0;
   int _challengesSeed = 0;
   bool _isInHomeDetail = false;
+  UniversityFact? _bannerFact;
+  Timer? _bannerTimer;
 
   void _onHomeDepthChanged(int depth) {
     if (!mounted) return;
@@ -38,12 +46,28 @@ class _HomeShellViewState extends State<HomeShellView> {
   void initState() {
     super.initState();
     HomeShellView.onNavigateToMap = () => _onTabSelected(1);
+    FactUnlockNotifier.instance.addListener(_onFactUnlocked);
   }
 
   @override
   void dispose() {
     HomeShellView.onNavigateToMap = null;
+    FactUnlockNotifier.instance.removeListener(_onFactUnlocked);
+    _bannerTimer?.cancel();
     super.dispose();
+  }
+
+  void _onFactUnlocked() {
+    final fact = FactUnlockNotifier.instance.pendingFact;
+    if (fact == null || !mounted) return;
+    FactUnlockNotifier.instance.consume();
+    _bannerTimer?.cancel();
+    setState(() => _bannerFact = fact);
+    _bannerTimer = Timer(const Duration(seconds: 6), _dismissBanner);
+  }
+
+  void _dismissBanner() {
+    if (mounted) setState(() => _bannerFact = null);
   }
 
   Future<void> _onTabSelected(int index) async {
@@ -77,25 +101,48 @@ class _HomeShellViewState extends State<HomeShellView> {
     final selectedNavIndex =
         (_currentIndex == 0 && _isInHomeDetail) ? -1 : _currentIndex;
 
+    final bottomInset = MediaQuery.paddingOf(context).bottom;
+    final navBarHeight = 68.0 + (bottomInset > 14 ? bottomInset - 14 : 4.0);
+
     return Scaffold(
       extendBody: true,
-      body: IndexedStack(
-        index: _currentIndex,
+      body: Stack(
         children: [
-          Navigator(
-            key: _homeNavigatorKey,
-            observers: [_homeNavigatorObserver],
-            onGenerateRoute: (_) {
-              return MaterialPageRoute(
-                builder: (_) => const HomeView(),
-              );
-            },
+          IndexedStack(
+            index: _currentIndex,
+            children: [
+              Navigator(
+                key: _homeNavigatorKey,
+                observers: [_homeNavigatorObserver],
+                onGenerateRoute: (_) {
+                  return MaterialPageRoute(
+                    builder: (_) => const HomeView(),
+                  );
+                },
+              ),
+              const MapScreen(),
+              ChallengesView(
+                key: ValueKey(_challengesSeed),
+                onAnswerCompleted: () => _onTabSelected(0),
+              ),
+              const FactsView(),
+            ],
           ),
-          const MapScreen(),
-          ChallengesView(
-            key: ValueKey(_challengesSeed),
-            onAnswerCompleted: () => _onTabSelected(0),
-          ),
+          if (_bannerFact != null)
+            Positioned(
+              bottom: navBarHeight + 12,
+              left: 0,
+              right: 0,
+              child: FactUnlockBanner(
+                key: ValueKey(_bannerFact!.id),
+                fact: _bannerFact!,
+                onTap: () {
+                  _dismissBanner();
+                  _onTabSelected(3);
+                },
+                onDismiss: _dismissBanner,
+              ),
+            ),
         ],
       ),
       bottomNavigationBar: AppBottomNavBar(
