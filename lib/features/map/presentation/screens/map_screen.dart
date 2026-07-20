@@ -364,12 +364,12 @@ class _MapScreenState extends State<MapScreen>
       builder: (_) => PoiBottomSheet(
         punto: punto,
         distanceMeters: _distanceTo(punto),
-        onUnlock: () => _handleUnlock(punto),
+        onUnlock: (calificacion) => _handleUnlock(punto, calificacion),
       ),
     );
   }
 
-  Future<void> _handleUnlock(PuntoDeInteres punto) async {
+  Future<void> _handleUnlock(PuntoDeInteres punto, int? calificacion) async {
     final userId = Supabase.instance.client.auth.currentUser?.id;
     if (userId == null) return;
     if (mounted) Navigator.of(context).pop();
@@ -378,7 +378,8 @@ class _MapScreenState extends State<MapScreen>
       if ((await Vibration.hasVibrator()) == true) {
         Vibration.vibrate(duration: 500);
       }
-      final pointsEarned = await _unlockPoi(userId, punto.id);
+      final pointsEarned =
+          await _unlockPoi(userId, punto.id, calificacion: calificacion);
       await ProximityService().refreshPuntos();
       if (mounted && _mapboxMap != null) {
         await _loadCircleLayer();
