@@ -1,6 +1,9 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../../../core/theme/app_design_system.dart';
 import '../widgets/google_mark.dart';
 
 class LoginView extends StatelessWidget {
@@ -16,7 +19,7 @@ class LoginView extends StatelessWidget {
       ),
       child: Scaffold(
         body: Container(
-          color: const Color(0xFF0E147A),
+          color: AppColors.primaryMain,
           child: SafeArea(
             top: false,
             child: LayoutBuilder(
@@ -39,8 +42,8 @@ class LoginView extends StatelessWidget {
                                 end: Alignment.bottomCenter,
                                 colors: [
                                   Colors.transparent,
-                                  Color(0x660E147A),
-                                  Color(0xFF0E147A),
+                                  AppColors.primaryMain40,
+                                  AppColors.primaryMain,
                                 ],
                                 stops: [0.42, 0.74, 1.0],
                               ),
@@ -60,7 +63,7 @@ class LoginView extends StatelessWidget {
                             style: TextStyle(
                               color: Colors.white,
                               fontSize: 24,
-                              fontWeight: FontWeight.w700,
+                              fontWeight: AppTypography.weightBold,
                               height: 1.1,
                             ),
                           ),
@@ -71,7 +74,7 @@ class LoginView extends StatelessWidget {
                             style: TextStyle(
                               color: Colors.white,
                               fontSize: 16,
-                              fontWeight: FontWeight.w500,
+                              fontWeight: AppTypography.weightMedium,
                             ),
                           ),
                         ],
@@ -84,13 +87,23 @@ class LoginView extends StatelessWidget {
                         width: double.infinity,
                         height: 72,
                         child: ElevatedButton(
-                          onPressed: () {},
+                          onPressed: () async {
+                            await Supabase.instance.client.auth.signInWithOAuth(
+                              OAuthProvider.google,
+                              redirectTo: kIsWeb
+                                  ? Uri.base.origin
+                                  : 'io.supabase.minasgo://login-callback/',
+                              authScreenLaunchMode: kIsWeb
+                                  ? LaunchMode.platformDefault
+                                  : LaunchMode.externalApplication,
+                            );
+                          },
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.white,
-                            foregroundColor: const Color(0xFF222222),
+                            backgroundColor: AppColors.surface,
+                            foregroundColor: AppColors.textPrimary,
                             elevation: 0,
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(20),
+                              borderRadius: BorderRadius.circular(AppRadius.lg),
                             ),
                             padding: const EdgeInsets.symmetric(horizontal: 20),
                           ),
@@ -106,10 +119,9 @@ class LoginView extends StatelessWidget {
                                   overflow: TextOverflow.ellipsis,
                                   textAlign: TextAlign.center,
                                   style: TextStyle(
-                                    fontSize: constraints.maxWidth < 420
-                                        ? 18
-                                        : 23,
-                                    fontWeight: FontWeight.w500,
+                                    fontSize:
+                                        constraints.maxWidth < 420 ? 18 : 23,
+                                    fontWeight: AppTypography.weightMedium,
                                   ),
                                 ),
                               ),
@@ -124,7 +136,7 @@ class LoginView extends StatelessWidget {
                       style: TextStyle(
                         color: Colors.white,
                         fontSize: 16,
-                        fontWeight: FontWeight.w400,
+                        fontWeight: AppTypography.weightRegular,
                       ),
                     ),
                     const Spacer(),
