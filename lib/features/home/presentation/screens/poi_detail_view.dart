@@ -8,7 +8,9 @@ import 'package:flutter/services.dart';
 import '../../../../core/theme/app_design_system.dart';
 import '../../../../core/utils/poi_rarity.dart';
 import '../../../../core/widgets/poi_rating_badge.dart';
+import '../../../map/data/repositories/map_repository_impl.dart';
 import '../../../map/domain/entities/punto_de_interes.dart';
+import '../../../map/domain/repositories/map_repository.dart';
 
 class PoiDetailView extends StatefulWidget {
   final PuntoDeInteres punto;
@@ -16,6 +18,7 @@ class PoiDetailView extends StatefulWidget {
   final String pointName;
   final String pointDescription;
   final List<String> imagesUrls;
+  final MapRepository? repository;
 
   const PoiDetailView({
     super.key,
@@ -24,6 +27,7 @@ class PoiDetailView extends StatefulWidget {
     required this.pointName,
     required this.pointDescription,
     this.imagesUrls = const [],
+    this.repository,
   });
 
   @override
@@ -35,15 +39,17 @@ class _PoiDetailViewState extends State<PoiDetailView>
   int _currentImageIndex = 0;
   late final AnimationController _anim;
   late final AnimationController _shimmerOpacity;
+  late final MapRepository _repo = widget.repository ?? MapRepositoryImpl();
+  late PuntoDeInteres _punto;
 
-  String? get _rarity => widget.punto.visitado ? widget.punto.rarity : null;
+  String? get _rarity => _punto.visitado ? _punto.rarity : null;
 
-  bool get _isVisitado => widget.punto.visitado;
+  bool get _isVisitado => _punto.visitado;
 
   String get _displayName {
     return widget.pointName.trim().isNotEmpty
         ? widget.pointName
-        : widget.punto.nombre;
+        : _punto.nombre;
   }
 
   String? get _displayDescription {
@@ -51,11 +57,11 @@ class _PoiDetailViewState extends State<PoiDetailView>
     if (widget.pointDescription.trim().isNotEmpty) {
       return widget.pointDescription;
     }
-    return widget.punto.descripcion;
+    return _punto.descripcion;
   }
 
   List<String> get _images {
-    final merged = [...widget.imagesUrls, ...widget.punto.imagesUrls]
+    final merged = [...widget.imagesUrls, ..._punto.imagesUrls]
         .map((u) => u.trim())
         .where((u) => u.isNotEmpty)
         .toSet()
@@ -66,6 +72,7 @@ class _PoiDetailViewState extends State<PoiDetailView>
   @override
   void initState() {
     super.initState();
+    _punto = widget.punto;
     _anim = AnimationController(
       vsync: this,
       duration: switch (_rarity?.toLowerCase()) {
@@ -99,6 +106,17 @@ class _PoiDetailViewState extends State<PoiDetailView>
     _anim.dispose();
     _shimmerOpacity.dispose();
     super.dispose();
+  }
+
+  Future<void> _onRefresh() async {
+    try {
+      final fresh = await _repo.getPuntoById(_punto.id);
+      if (!mounted) return;
+      setState(() => _punto = fresh);
+    } catch (_) {
+      // Silently keep showing the previously loaded data; the pull-to-refresh
+      // spinner simply stops. No error UI needed for a background refresh.
+    }
   }
 
   @override
@@ -139,17 +157,22 @@ class _PoiDetailViewState extends State<PoiDetailView>
             child: Column(
               children: [
                 Expanded(
-                  child: SingleChildScrollView(
-                    padding: EdgeInsets.fromLTRB(20, topContentPadding, 20, 80),
-                    child: Column(
-                      children: [
-                        _buildCard(),
-                        if (_displayDescription != null &&
-                            _displayDescription!.isNotEmpty) ...[
-                          const SizedBox(height: 20),
-                          _buildDescriptionBox(_displayDescription!),
+                  child: RefreshIndicator(
+                    onRefresh: _onRefresh,
+                    child: SingleChildScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding:
+                          EdgeInsets.fromLTRB(20, topContentPadding, 20, 80),
+                      child: Column(
+                        children: [
+                          _buildCard(),
+                          if (_displayDescription != null &&
+                              _displayDescription!.isNotEmpty) ...[
+                            const SizedBox(height: 20),
+                            _buildDescriptionBox(_displayDescription!),
+                          ],
                         ],
-                      ],
+                      ),
                     ),
                   ),
                 ),
@@ -200,7 +223,7 @@ class _PoiDetailViewState extends State<PoiDetailView>
   // ── Card dispatcher ───────────────────────────────────────────────────────
 
   Widget _buildCard() {
-    if (!widget.punto.visitado) {
+    if (!_punto.visitado) {
       return _lockedCard();
     }
 
@@ -356,7 +379,7 @@ class _PoiDetailViewState extends State<PoiDetailView>
                       ),
                     ),
                     const SizedBox(height: 8),
-                    PoiRatingBadge(rating: widget.punto.calificacionPromedio),
+                    PoiRatingBadge(rating: _punto.calificacionPromedio),
                   ],
                 ),
               ),
@@ -477,7 +500,7 @@ class _PoiDetailViewState extends State<PoiDetailView>
                   ),
                   const SizedBox(height: 8),
                   PoiRatingBadge(
-                    rating: widget.punto.calificacionPromedio,
+                    rating: _punto.calificacionPromedio,
                     textColor: Colors.white,
                   ),
                 ],
@@ -748,7 +771,7 @@ class _PoiDetailViewState extends State<PoiDetailView>
               ),
               const SizedBox(height: 8),
               PoiRatingBadge(
-                rating: widget.punto.calificacionPromedio,
+                rating: _punto.calificacionPromedio,
                 textColor: Colors.white,
               ),
             ],

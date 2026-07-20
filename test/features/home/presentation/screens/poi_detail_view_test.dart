@@ -1,7 +1,54 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:minasgo_frontend/features/home/presentation/screens/poi_detail_view.dart';
+import 'package:minasgo_frontend/features/map/domain/entities/answer_validation_result.dart';
+import 'package:minasgo_frontend/features/map/domain/entities/categoria.dart';
+import 'package:minasgo_frontend/features/map/domain/entities/location_point.dart';
 import 'package:minasgo_frontend/features/map/domain/entities/punto_de_interes.dart';
+import 'package:minasgo_frontend/features/map/domain/entities/quiz_question.dart';
+import 'package:minasgo_frontend/features/map/domain/repositories/map_repository.dart';
+
+class FakeMapRepository implements MapRepository {
+  final PuntoDeInteres Function(int id) onGetPuntoById;
+
+  FakeMapRepository(this.onGetPuntoById);
+
+  @override
+  Future<PuntoDeInteres> getPuntoById(int id) async => onGetPuntoById(id);
+
+  @override
+  Future<LocationPoint> getCurrentLocation() => throw UnimplementedError();
+
+  @override
+  Future<String> getPoisGeoJson() => throw UnimplementedError();
+
+  @override
+  Future<List<PuntoDeInteres>> getPuntosConVisita(String? userId) =>
+      throw UnimplementedError();
+
+  @override
+  Future<List<Categoria>> getCategorias(String? userId) =>
+      throw UnimplementedError();
+
+  @override
+  Future<int> unlockPoi(String userId, int puntoId) =>
+      throw UnimplementedError();
+
+  @override
+  Future<QuizQuestion?> getQuestionForVisitedPoints(String userId) =>
+      throw UnimplementedError();
+
+  @override
+  Future<AnswerValidationResult> validateAnswer({
+    required String userId,
+    required int preguntaId,
+    required int selectedIndex,
+  }) =>
+      throw UnimplementedError();
+
+  @override
+  Future<int> getUserTotalPoints(String userId) => throw UnimplementedError();
+}
 
 PuntoDeInteres _punto({required String rarity, double? calificacion}) =>
     PuntoDeInteres(
@@ -83,6 +130,84 @@ void main() {
 
       expect(find.text('4.9'), findsNothing);
       expect(find.text('Sin calificar'), findsNothing);
+    });
+  });
+
+  group('PoiDetailView pull-to-refresh', () {
+    testWidgets('refreshing re-fetches the punto and shows the new rating',
+        (tester) async {
+      final original = _punto(rarity: 'singular', calificacion: 3.0);
+      final refreshed = PuntoDeInteres(
+        id: original.id,
+        nombre: original.nombre,
+        descripcion: original.descripcion,
+        categoria: original.categoria,
+        campus: original.campus,
+        universidad: original.universidad,
+        latitud: original.latitud,
+        longitud: original.longitud,
+        visitado: true,
+        rarity: original.rarity,
+        calificacionPromedio: 4.8,
+      );
+
+      final fakeRepo = FakeMapRepository((id) => refreshed);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: PoiDetailView(
+            punto: original,
+            categoryName: 'Histórico',
+            pointName: original.nombre,
+            pointDescription: original.descripcion ?? '',
+            repository: fakeRepo,
+          ),
+        ),
+      );
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(find.text('3.0'), findsOneWidget);
+
+      await tester.fling(
+        find.byType(SingleChildScrollView),
+        const Offset(0, 300),
+        1000,
+      );
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+      await tester.pumpAndSettle();
+
+      expect(find.text('4.8'), findsOneWidget);
+    });
+
+    testWidgets('keeps showing old data when the refresh fails',
+        (tester) async {
+      final original = _punto(rarity: 'singular', calificacion: 3.0);
+      final fakeRepo = FakeMapRepository((id) => throw Exception('network'));
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: PoiDetailView(
+            punto: original,
+            categoryName: 'Histórico',
+            pointName: original.nombre,
+            pointDescription: original.descripcion ?? '',
+            repository: fakeRepo,
+          ),
+        ),
+      );
+      await tester.pump(const Duration(milliseconds: 100));
+
+      await tester.fling(
+        find.byType(SingleChildScrollView),
+        const Offset(0, 300),
+        1000,
+      );
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+      await tester.pumpAndSettle();
+
+      expect(find.text('3.0'), findsOneWidget);
     });
   });
 }
