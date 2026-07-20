@@ -22,7 +22,7 @@ Permitir que el usuario califique el punto de 1 a 5 estrellas en el momento de d
 
 - Nuevo widget privado `_RatingSelector` (`StatelessWidget`, recibe `selected: int?` y `onChanged: ValueChanged<int?>`): fila de 5 iconos de estrella tocables (`Icons.star_rounded` relleno hasta `selected`, `Icons.star_border_rounded` el resto). Tocar la estrella `n` ya seleccionada la deselecciona (vuelve a `null`, permite "saltar" la calificación); tocar otra estrella la selecciona.
 - `_PoiBottomSheetState` gana `int? _selectedRating` (default `null`).
-- Se muestra el `_RatingSelector` con una etiqueta "Califica este lugar (opcional)" **solo quando `!isVisitado && _inRange`** (justo encima del botón "Desbloquear", dentro del mismo bloque condicional que hoy renderiza `_UnlockButton`).
+- Se muestra el `_RatingSelector` con una etiqueta "¿Deseas calificar este punto? Esto le ayudará a otros usuarios a decidir si visitarlo" **solo cuando `!isVisitado && _inRange`** (justo encima del botón "Desbloquear", dentro del mismo bloque condicional que hoy renderiza `_UnlockButton`).
 - `widget.onUnlock` cambia de firma: de `Future<void> Function()` a `Future<void> Function(int? calificacion)`. `_triggerUnlock` pasa `_selectedRating`.
 
 ### `MapScreen` (lib/features/map/presentation/screens/map_screen.dart)
