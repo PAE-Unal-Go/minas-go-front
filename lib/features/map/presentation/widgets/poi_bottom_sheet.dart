@@ -10,7 +10,7 @@ const double proximityThresholdMeters = 8.0;
 class PoiBottomSheet extends StatefulWidget {
   final PuntoDeInteres punto;
   final double distanceMeters;
-  final Future<void> Function() onUnlock;
+  final Future<void> Function(int? calificacion) onUnlock;
 
   const PoiBottomSheet({
     super.key,
@@ -25,6 +25,7 @@ class PoiBottomSheet extends StatefulWidget {
 
 class _PoiBottomSheetState extends State<PoiBottomSheet> {
   bool _isUnlocking = false;
+  int? _selectedRating;
 
   bool get _inRange => widget.distanceMeters <= proximityThresholdMeters;
 
@@ -34,10 +35,14 @@ class _PoiBottomSheetState extends State<PoiBottomSheet> {
     return '${(meters / 1000).toStringAsFixed(1)} km';
   }
 
+  void _onRatingChanged(int? rating) {
+    setState(() => _selectedRating = rating);
+  }
+
   Future<void> _triggerUnlock() async {
     if (_isUnlocking) return;
     setState(() => _isUnlocking = true);
-    await widget.onUnlock();
+    await widget.onUnlock(_selectedRating);
     if (mounted) setState(() => _isUnlocking = false);
   }
 
@@ -118,6 +123,26 @@ class _PoiBottomSheetState extends State<PoiBottomSheet> {
                 ],
 
                 const SizedBox(height: 16),
+
+                // ── Rating prompt (optional, only while unlockable) ──
+                if (!isVisitado && _inRange) ...[
+                  const Text(
+                    '¿Deseas calificar este punto? Esto le ayudará a otros '
+                    'usuarios a decidir si visitarlo',
+                    style: TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      height: 1.4,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  _RatingSelector(
+                    selected: _selectedRating,
+                    onChanged: _onRatingChanged,
+                  ),
+                  const SizedBox(height: 16),
+                ],
 
                 // ── Action button ──
                 if (!isVisitado)
@@ -279,6 +304,40 @@ class _PoiImageSection extends StatelessWidget {
             ),
           ),
       ],
+    );
+  }
+}
+
+class _RatingSelector extends StatelessWidget {
+  final int? selected;
+  final ValueChanged<int?> onChanged;
+
+  const _RatingSelector({
+    required this.selected,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: List.generate(5, (index) {
+        final starValue = index + 1;
+        final filled = selected != null && starValue <= selected!;
+        return IconButton(
+          onPressed: () {
+            onChanged(filled && starValue == selected ? null : starValue);
+          },
+          icon: Icon(
+            filled ? Icons.star_rounded : Icons.star_border_rounded,
+            color: AppColors.warning,
+            size: 28,
+          ),
+          splashRadius: 22,
+          padding: EdgeInsets.zero,
+          constraints: const BoxConstraints(),
+        );
+      }),
     );
   }
 }
