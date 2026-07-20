@@ -10,6 +10,7 @@ class PuntoDeInteres {
   final double longitud;
   final bool visitado;
   final String? rarity;
+  final double? calificacionPromedio;
 
   const PuntoDeInteres({
     required this.id,
@@ -23,6 +24,7 @@ class PuntoDeInteres {
     required this.longitud,
     this.visitado = false,
     this.rarity,
+    this.calificacionPromedio,
   });
 
   String? get mainImageUrl => imagesUrls.isNotEmpty ? imagesUrls.first : null;
@@ -55,6 +57,7 @@ class PuntoDeInteres {
       longitud: (map['longitud'] as num).toDouble(),
       visitado: map['visitado'] as bool? ?? false,
       rarity: map['rarity'] as String?,
+      calificacionPromedio: (map['calificacion_promedio'] as num?)?.toDouble(),
     );
   }
 }
