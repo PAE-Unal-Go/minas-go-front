@@ -134,6 +134,22 @@ class MapRepositoryImpl implements MapRepository {
   }
 
   @override
+  Future<PuntoDeInteres> getPuntoById(int id) async {
+    try {
+      final res = await _supabase
+          .from('puntos_de_interes')
+          .select()
+          .eq('id', id)
+          .single();
+      final map = Map<String, dynamic>.from(res);
+      map['visitado'] = true;
+      return PuntoDeInteres.fromMap(map);
+    } catch (e) {
+      return Future.error('Error fetching punto by id: $e');
+    }
+  }
+
+  @override
   Future<List<Categoria>> getCategorias(String? userId) async {
     try {
       final puntos = await getPuntosConVisita(userId);

@@ -8,6 +8,12 @@ abstract class MapRepository {
   Future<LocationPoint> getCurrentLocation();
   Future<String> getPoisGeoJson();
   Future<List<PuntoDeInteres>> getPuntosConVisita(String? userId);
+
+  /// Refetches a single punto de interés by id (used for pull-to-refresh on
+  /// the detail view). Always returns visitado = true, since this is only
+  /// called for points the user has already unlocked.
+  Future<PuntoDeInteres> getPuntoById(int id);
+
   Future<List<Categoria>> getCategorias(String? userId);
   /// RPC: registrar_visita(p_usuario, p_punto)
   /// Registers the visit and returns points earned from the unlock.
