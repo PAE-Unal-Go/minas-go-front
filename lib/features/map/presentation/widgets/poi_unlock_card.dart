@@ -2,6 +2,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:audioplayers/audioplayers.dart';
 import '../../../../core/widgets/poi_image_gallery.dart';
+import '../../../../core/widgets/poi_rating_badge.dart';
 import '../../domain/entities/punto_de_interes.dart';
 import '../../domain/entities/categoria.dart';
 import '../../../../core/theme/app_design_system.dart';
@@ -491,6 +492,8 @@ class _PoiUnlockCardState extends State<PoiUnlockCard>
                   ),
                   const SizedBox(height: 10),
                   _buildRarityRow(punto.rarity, widget.pointsEarned),
+                  const SizedBox(height: 8),
+                  PoiRatingBadge(rating: punto.calificacionPromedio),
                   if (punto.descripcion != null && punto.descripcion!.isNotEmpty) ...[
                     const SizedBox(height: 12),
                     Container(
