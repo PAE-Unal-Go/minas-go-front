@@ -183,13 +183,14 @@ class MapRepositoryImpl implements MapRepository {
   }
 
   @override
-  Future<int> unlockPoi(String userId, int puntoId) async {
+  Future<int> unlockPoi(String userId, int puntoId, {int? calificacion}) async {
     try {
       final res = await _supabase.rpc(
         'registrar_visita',
         params: {
           'p_usuario': userId,
           'p_punto': puntoId,
+          'p_calificacion': calificacion,
         },
       );
       if (res == null) return 0;

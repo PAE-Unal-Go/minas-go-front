@@ -15,9 +15,10 @@ abstract class MapRepository {
   Future<PuntoDeInteres> getPuntoById(int id);
 
   Future<List<Categoria>> getCategorias(String? userId);
-  /// RPC: registrar_visita(p_usuario, p_punto)
+  /// RPC: registrar_visita(p_usuario, p_punto, p_calificacion)
   /// Registers the visit and returns points earned from the unlock.
-  Future<int> unlockPoi(String userId, int puntoId);
+  /// calificacion is an optional 1-5 rating for the point (nullable).
+  Future<int> unlockPoi(String userId, int puntoId, {int? calificacion});
 
   /// RPC: get_question_for_visited_points(p_usuario_id)
   /// Returns a random quiz question related to points visited by the user

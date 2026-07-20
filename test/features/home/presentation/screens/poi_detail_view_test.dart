@@ -31,7 +31,7 @@ class FakeMapRepository implements MapRepository {
       throw UnimplementedError();
 
   @override
-  Future<int> unlockPoi(String userId, int puntoId) =>
+  Future<int> unlockPoi(String userId, int puntoId, {int? calificacion}) =>
       throw UnimplementedError();
 
   @override

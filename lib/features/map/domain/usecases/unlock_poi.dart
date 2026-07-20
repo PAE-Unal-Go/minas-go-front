@@ -4,7 +4,7 @@ class UnlockPoi {
   final MapRepository repository;
   const UnlockPoi(this.repository);
 
-  Future<int> call(String userId, int puntoId) {
-    return repository.unlockPoi(userId, puntoId);
+  Future<int> call(String userId, int puntoId, {int? calificacion}) {
+    return repository.unlockPoi(userId, puntoId, calificacion: calificacion);
   }
 }
