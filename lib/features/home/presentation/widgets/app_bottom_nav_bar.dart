@@ -53,6 +53,12 @@ class AppBottomNavBar extends StatelessWidget {
               selected: currentIndex == 2,
               onTap: () => onTap(2),
             ),
+            _NavItem(
+              icon: Icons.lightbulb_outline_rounded,
+              label: 'Datos',
+              selected: currentIndex == 3,
+              onTap: () => onTap(3),
+            ),
           ],
         ),
       ),

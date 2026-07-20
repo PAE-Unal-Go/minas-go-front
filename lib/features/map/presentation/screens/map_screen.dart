@@ -12,6 +12,9 @@ import '../../domain/entities/categoria.dart';
 import 'package:minasgo_frontend/features/map/domain/entities/location_point.dart';
 import 'package:minasgo_frontend/features/map/data/repositories/map_repository_impl.dart';
 import 'package:minasgo_frontend/core/services/proximity_service.dart';
+import 'package:minasgo_frontend/features/facts/data/repositories/facts_repository_impl.dart';
+import 'package:minasgo_frontend/features/facts/domain/usecases/try_unlock_fact.dart';
+import 'package:minasgo_frontend/features/facts/fact_unlock_notifier.dart';
 import '../widgets/poi_bottom_sheet.dart';
 import '../widgets/poi_unlock_card.dart';
 import '../widgets/category_dropdown.dart';
@@ -46,6 +49,7 @@ class _MapScreenState extends State<MapScreen>
   // ── Services ──
   final _repo = MapRepositoryImpl();
   late final UnlockPoi _unlockPoi;
+  late final TryUnlockFact _tryUnlockFact;
 
   // ── Proximity feedback ──
   late final AudioPlayer _audioPlayer;
@@ -61,6 +65,7 @@ class _MapScreenState extends State<MapScreen>
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _unlockPoi = UnlockPoi(_repo);
+    _tryUnlockFact = TryUnlockFact(FactsRepositoryImpl());
     _audioPlayer = AudioPlayer();
 
     _pulseController = AnimationController(
@@ -383,6 +388,12 @@ class _MapScreenState extends State<MapScreen>
       await ProximityService().refreshPuntos();
       if (mounted && _mapboxMap != null) {
         await _loadCircleLayer();
+      }
+
+      // Best-effort: check if a new university fact milestone was reached.
+      final newFact = await _tryUnlockFact(userId);
+      if (newFact != null) {
+        FactUnlockNotifier.instance.notify(newFact);
       }
 
       if (mounted) {
