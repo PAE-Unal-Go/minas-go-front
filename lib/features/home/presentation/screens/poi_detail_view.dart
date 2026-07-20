@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 
 import '../../../../core/theme/app_design_system.dart';
 import '../../../../core/utils/poi_rarity.dart';
+import '../../../../core/widgets/poi_rating_badge.dart';
 import '../../../map/domain/entities/punto_de_interes.dart';
 
 class PoiDetailView extends StatefulWidget {
@@ -354,6 +355,8 @@ class _PoiDetailViewState extends State<PoiDetailView>
                         fontWeight: FontWeight.w500,
                       ),
                     ),
+                    const SizedBox(height: 8),
+                    PoiRatingBadge(rating: widget.punto.calificacionPromedio),
                   ],
                 ),
               ),
@@ -471,6 +474,11 @@ class _PoiDetailViewState extends State<PoiDetailView>
                       fontSize: 13,
                       fontWeight: FontWeight.w500,
                     ),
+                  ),
+                  const SizedBox(height: 8),
+                  PoiRatingBadge(
+                    rating: widget.punto.calificacionPromedio,
+                    textColor: Colors.white,
                   ),
                 ],
               ),
@@ -737,6 +745,11 @@ class _PoiDetailViewState extends State<PoiDetailView>
                   fontSize: 13,
                   fontWeight: FontWeight.w500,
                 ),
+              ),
+              const SizedBox(height: 8),
+              PoiRatingBadge(
+                rating: widget.punto.calificacionPromedio,
+                textColor: Colors.white,
               ),
             ],
           ),
