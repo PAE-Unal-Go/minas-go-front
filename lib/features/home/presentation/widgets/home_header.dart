@@ -11,6 +11,9 @@ class HomeHeader extends StatelessWidget {
   final int burnedPoints;
   final VoidCallback onLogout;
 
+  /// Optional campus selector shown under the greeting.
+  final Widget? campusSelector;
+
   const HomeHeader({
     super.key,
     required this.firstName,
@@ -18,82 +21,93 @@ class HomeHeader extends StatelessWidget {
     required this.userAvatar,
     required this.burnedPoints,
     required this.onLogout,
+    this.campusSelector,
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.fromLTRB(26, 14, 26, 26),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: AppColors.secondaryLight,
-              boxShadow: [
-                AppShadows.shadowSm,
-              ],
-            ),
-            child: ClipOval(
-              child: userAvatar != null
-                  ? CachedNetworkImage(
-                      imageUrl: userAvatar!,
-                      fit: BoxFit.cover,
-                      errorWidget: (context, url, error) => _buildAvatarFallback(),
-                      placeholder: (context, url) => Container(
-                        color: Colors.grey[200],
-                        child: const Center(
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                          ),
-                        ),
-                      ),
-                    )
-                  : _buildAvatarFallback(),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  '¡Hola, $firstName!',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: AppTypography.fontSizeLg,
-                    fontWeight: AppTypography.weightBold,
-                    height: 1,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+          Row(
+            children: [
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: AppColors.secondaryLight,
+                  boxShadow: [
+                    AppShadows.shadowSm,
+                  ],
                 ),
-                const SizedBox(height: 8),
-                Row(
-                  mainAxisSize: MainAxisSize.min,
+                child: ClipOval(
+                  child: userAvatar != null
+                      ? CachedNetworkImage(
+                          imageUrl: userAvatar!,
+                          fit: BoxFit.cover,
+                          errorWidget: (context, url, error) =>
+                              _buildAvatarFallback(),
+                          placeholder: (context, url) => Container(
+                            color: Colors.grey[200],
+                            child: const Center(
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                              ),
+                            ),
+                          ),
+                        )
+                      : _buildAvatarFallback(),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const SparkleStarBadge(),
-                    const SizedBox(width: 8),
                     Text(
-                      '$burnedPoints puntos',
+                      '¡Hola, $firstName!',
                       style: const TextStyle(
                         color: Colors.white,
-                        fontSize: AppTypography.fontSizeMd,
-                        fontWeight: AppTypography.weightMedium,
+                        fontSize: AppTypography.fontSizeLg,
+                        fontWeight: AppTypography.weightBold,
+                        height: 1,
                       ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const SparkleStarBadge(),
+                        const SizedBox(width: 8),
+                        Text(
+                          '$burnedPoints puntos',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: AppTypography.fontSizeMd,
+                            fontWeight: AppTypography.weightMedium,
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
-              ],
-            ),
+              ),
+              IconButton(
+                onPressed: onLogout,
+                icon: const Icon(Icons.logout, color: Colors.white, size: 22),
+                tooltip: 'Cerrar sesión',
+              ),
+            ],
           ),
-          IconButton(
-            onPressed: onLogout,
-            icon: const Icon(Icons.logout, color: Colors.white, size: 22),
-            tooltip: 'Cerrar sesión',
-          ),
+          if (campusSelector != null) ...[
+            const SizedBox(height: 14),
+            campusSelector!,
+          ],
         ],
       ),
     );

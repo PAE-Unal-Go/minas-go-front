@@ -2,7 +2,10 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:audioplayers/audioplayers.dart';
 import '../../../../core/widgets/poi_image_gallery.dart';
-import '../../../../core/widgets/poi_rating_badge.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../../../core/widgets/poi_rating_input.dart';
+import '../../data/repositories/map_repository_impl.dart';
+import '../../domain/repositories/map_repository.dart';
 import '../../domain/entities/punto_de_interes.dart';
 import '../../domain/entities/categoria.dart';
 import '../../../../core/theme/app_design_system.dart';
@@ -13,12 +16,20 @@ class PoiUnlockCard extends StatefulWidget {
   final PuntoDeInteres punto;
   final VoidCallback onClose;
   final int pointsEarned;
+  final MapRepository? repository;
+  final String? userId;
+
+  /// Called after the user's rating was saved successfully.
+  final VoidCallback? onRated;
 
   const PoiUnlockCard({
     super.key,
     required this.punto,
     required this.onClose,
     this.pointsEarned = 0,
+    this.repository,
+    this.userId,
+    this.onRated,
   });
 
   @override
@@ -41,6 +52,18 @@ class _PoiUnlockCardState extends State<PoiUnlockCard>
 
   bool _showCard = false;
   bool _showBadge = false;
+  late PuntoDeInteres _punto = widget.punto;
+
+  Future<void> _rate(int stars) async {
+    final userId =
+        widget.userId ?? Supabase.instance.client.auth.currentUser?.id;
+    if (userId == null) throw StateError('Sesión no iniciada');
+    final repo = widget.repository ?? MapRepositoryImpl();
+    await repo.ratePoi(userId, _punto.id, stars);
+    if (!mounted) return;
+    setState(() => _punto = _punto.copyWith(miCalificacion: stars));
+    widget.onRated?.call();
+  }
 
   @override
   void initState() {
@@ -132,7 +155,7 @@ class _PoiUnlockCardState extends State<PoiUnlockCard>
               gradient: RadialGradient(
                 center: Alignment.center,
                 radius: 1.2,
-                colors: switch (widget.punto.rarity?.toLowerCase()) {
+                colors: switch (_punto.rarity?.toLowerCase()) {
                   PoiRarity.epic => [
                       const Color(0xFF3D2000),
                       const Color(0xFF1A0E00),
@@ -166,17 +189,25 @@ class _PoiUnlockCardState extends State<PoiUnlockCard>
 
           // Main card
           if (_showCard)
-            Center(
-              child: AnimatedBuilder(
-                animation: _flipController,
-                builder: (_, child) => Transform.scale(
-                  scale: _cardScale.value,
-                  child: Opacity(
-                    opacity: _cardOpacity.value.clamp(0.0, 1.0),
-                    child: child,
+            LayoutBuilder(
+              builder: (context, constraints) => SingleChildScrollView(
+                child: ConstrainedBox(
+                  constraints:
+                      BoxConstraints(minHeight: constraints.maxHeight),
+                  child: Center(
+                    child: AnimatedBuilder(
+                      animation: _flipController,
+                      builder: (_, child) => Transform.scale(
+                        scale: _cardScale.value,
+                        child: Opacity(
+                          opacity: _cardOpacity.value.clamp(0.0, 1.0),
+                          child: child,
+                        ),
+                      ),
+                      child: _buildCard(),
+                    ),
                   ),
                 ),
-                child: _buildCard(),
               ),
             ),
 
@@ -368,7 +399,7 @@ class _PoiUnlockCardState extends State<PoiUnlockCard>
   }
 
   Widget _buildCard() {
-    final punto = widget.punto;
+    final punto = _punto;
 
     return Container(
       width: MediaQuery.of(context).size.width * 0.85,
@@ -493,7 +524,11 @@ class _PoiUnlockCardState extends State<PoiUnlockCard>
                   const SizedBox(height: 10),
                   _buildRarityRow(punto.rarity, widget.pointsEarned),
                   const SizedBox(height: 8),
-                  PoiRatingBadge(rating: punto.calificacionPromedio),
+                  PoiRatingInput(
+                    rating: punto.miCalificacion,
+                    onRate: _rate,
+                    dark: true,
+                  ),
                   if (punto.descripcion != null && punto.descripcion!.isNotEmpty) ...[
                     const SizedBox(height: 12),
                     Container(

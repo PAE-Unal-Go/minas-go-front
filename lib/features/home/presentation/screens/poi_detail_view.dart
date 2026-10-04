@@ -7,7 +7,9 @@ import 'package:flutter/services.dart';
 
 import '../../../../core/theme/app_design_system.dart';
 import '../../../../core/utils/poi_rarity.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/widgets/poi_rating_badge.dart';
+import '../../../../core/widgets/poi_rating_input.dart';
 import '../../../map/data/repositories/map_repository_impl.dart';
 import '../../../map/domain/entities/punto_de_interes.dart';
 import '../../../map/domain/repositories/map_repository.dart';
@@ -19,6 +21,11 @@ class PoiDetailView extends StatefulWidget {
   final String pointDescription;
   final List<String> imagesUrls;
   final MapRepository? repository;
+  final String? userId;
+
+  /// Called whenever the point changes (e.g. the user rated it), so parent
+  /// lists can show the new rating.
+  final ValueChanged<PuntoDeInteres>? onPuntoChanged;
 
   const PoiDetailView({
     super.key,
@@ -28,6 +35,8 @@ class PoiDetailView extends StatefulWidget {
     required this.pointDescription,
     this.imagesUrls = const [],
     this.repository,
+    this.userId,
+    this.onPuntoChanged,
   });
 
   @override
@@ -108,11 +117,22 @@ class _PoiDetailViewState extends State<PoiDetailView>
     super.dispose();
   }
 
+  Future<void> _rate(int stars) async {
+    final userId =
+        widget.userId ?? Supabase.instance.client.auth.currentUser?.id;
+    if (userId == null) throw StateError('Sesión no iniciada');
+    await _repo.ratePoi(userId, _punto.id, stars);
+    if (!mounted) return;
+    setState(() => _punto = _punto.copyWith(miCalificacion: stars));
+    widget.onPuntoChanged?.call(_punto);
+  }
+
   Future<void> _onRefresh() async {
     try {
       final fresh = await _repo.getPuntoById(_punto.id);
       if (!mounted) return;
       setState(() => _punto = fresh);
+      widget.onPuntoChanged?.call(fresh);
     } catch (_) {
       // Silently keep showing the previously loaded data; the pull-to-refresh
       // spinner simply stops. No error UI needed for a background refresh.
@@ -166,6 +186,10 @@ class _PoiDetailViewState extends State<PoiDetailView>
                       child: Column(
                         children: [
                           _buildCard(),
+                          if (_isVisitado) ...[
+                            const SizedBox(height: 20),
+                            _buildRatingBox(),
+                          ],
                           if (_displayDescription != null &&
                               _displayDescription!.isNotEmpty) ...[
                             const SizedBox(height: 20),
@@ -379,7 +403,7 @@ class _PoiDetailViewState extends State<PoiDetailView>
                       ),
                     ),
                     const SizedBox(height: 8),
-                    PoiRatingBadge(rating: _punto.calificacionPromedio),
+                    PoiRatingBadge(rating: _punto.miCalificacion?.toDouble()),
                   ],
                 ),
               ),
@@ -500,7 +524,7 @@ class _PoiDetailViewState extends State<PoiDetailView>
                   ),
                   const SizedBox(height: 8),
                   PoiRatingBadge(
-                    rating: _punto.calificacionPromedio,
+                    rating: _punto.miCalificacion?.toDouble(),
                     textColor: Colors.white,
                   ),
                 ],
@@ -771,7 +795,7 @@ class _PoiDetailViewState extends State<PoiDetailView>
               ),
               const SizedBox(height: 8),
               PoiRatingBadge(
-                rating: _punto.calificacionPromedio,
+                rating: _punto.miCalificacion?.toDouble(),
                 textColor: Colors.white,
               ),
             ],
@@ -1000,9 +1024,30 @@ class _PoiDetailViewState extends State<PoiDetailView>
     );
   }
 
+  Widget _buildRatingBox() {
+    final isDark = _rarity == PoiRarity.epic || _rarity == PoiRarity.legendary;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: isDark
+            ? Colors.white.withValues(alpha: 0.07)
+            : Colors.white.withValues(alpha: 0.85),
+        borderRadius: BorderRadius.circular(16),
+        border: isDark
+            ? Border.all(color: Colors.white.withValues(alpha: 0.12))
+            : null,
+      ),
+      child: PoiRatingInput(
+        rating: _punto.miCalificacion,
+        onRate: _rate,
+        dark: isDark,
+      ),
+    );
+  }
+
   Widget _buildDescriptionBox(String description) {
-    final isDark =
-        _rarity == PoiRarity.epic || _rarity == PoiRarity.legendary;
+    final isDark = _rarity == PoiRarity.epic || _rarity == PoiRarity.legendary;
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),

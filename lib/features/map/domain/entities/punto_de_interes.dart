@@ -12,6 +12,9 @@ class PuntoDeInteres {
   final String? rarity;
   final double? calificacionPromedio;
 
+  /// Rating (1-5) given by the current user, null when not rated yet.
+  final int? miCalificacion;
+
   const PuntoDeInteres({
     required this.id,
     required this.nombre,
@@ -25,7 +28,26 @@ class PuntoDeInteres {
     this.visitado = false,
     this.rarity,
     this.calificacionPromedio,
+    this.miCalificacion,
   });
+
+  PuntoDeInteres copyWith({int? miCalificacion, double? calificacionPromedio}) {
+    return PuntoDeInteres(
+      id: id,
+      nombre: nombre,
+      descripcion: descripcion,
+      imagesUrls: imagesUrls,
+      categoria: categoria,
+      campus: campus,
+      universidad: universidad,
+      latitud: latitud,
+      longitud: longitud,
+      visitado: visitado,
+      rarity: rarity,
+      calificacionPromedio: calificacionPromedio ?? this.calificacionPromedio,
+      miCalificacion: miCalificacion ?? this.miCalificacion,
+    );
+  }
 
   String? get mainImageUrl => imagesUrls.isNotEmpty ? imagesUrls.first : null;
 
@@ -58,6 +80,7 @@ class PuntoDeInteres {
       visitado: map['visitado'] as bool? ?? false,
       rarity: map['rarity'] as String?,
       calificacionPromedio: (map['calificacion_promedio'] as num?)?.toDouble(),
+      miCalificacion: (map['mi_calificacion'] as num?)?.toInt(),
     );
   }
 }

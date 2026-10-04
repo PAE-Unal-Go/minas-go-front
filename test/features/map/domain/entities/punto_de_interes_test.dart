@@ -46,4 +46,23 @@ void main() {
       expect(punto.calificacionPromedio, isNull);
     });
   });
+
+  group('PuntoDeInteres.miCalificacion', () {
+    test('parses mi_calificacion from the map', () {
+      final map = {..._baseMap(), 'mi_calificacion': 4};
+      expect(PuntoDeInteres.fromMap(map).miCalificacion, 4);
+    });
+
+    test('is null when the user has not rated', () {
+      expect(PuntoDeInteres.fromMap(_baseMap()).miCalificacion, isNull);
+    });
+
+    test('copyWith updates the rating and keeps the rest', () {
+      final punto = PuntoDeInteres.fromMap(_baseMap(calificacion: 3));
+      final updated = punto.copyWith(miCalificacion: 5);
+      expect(updated.miCalificacion, 5);
+      expect(updated.id, punto.id);
+      expect(updated.calificacionPromedio, punto.calificacionPromedio);
+    });
+  });
 }

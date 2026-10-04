@@ -8,12 +8,14 @@ import '../widgets/home_header.dart';
 import '../widgets/home_section_title.dart';
 import '../widgets/poi_card.dart';
 import '../../../map/data/repositories/map_repository_impl.dart';
-import '../../../map/domain/usecases/get_categorias.dart';
 import '../../../map/domain/usecases/get_puntos_con_visita.dart';
 import '../../../map/domain/usecases/get_user_total_points.dart';
+import '../../../map/domain/entities/campus.dart';
 import '../../../map/domain/entities/categoria.dart';
 import '../../../map/domain/entities/punto_de_interes.dart';
+import '../../../../core/services/campus_selection.dart';
 import '../../../../core/services/proximity_service.dart';
+import '../../../../core/widgets/campus_dropdown.dart';
 
 class HomeView extends StatefulWidget {
   const HomeView({super.key});
@@ -27,12 +29,22 @@ class _HomeViewState extends State<HomeView> with TickerProviderStateMixin {
   late final Animation<double> _fadeAnimation;
 
   final _repo = MapRepositoryImpl();
-  late final GetCategorias _getCategorias;
   late final GetPuntosConVisita _getPuntosConVisita;
   late final GetUserTotalPoints _getUserTotalPoints;
 
-  List<Categoria> _categorias = [];
-  Map<String, List<PuntoDeInteres>> _puntosPorCategoria = {};
+  List<PuntoDeInteres> _allPuntos = [];
+
+  String? get _campus => CampusSelection.instance.selected;
+  List<PuntoDeInteres> get _visiblePuntos => Campus.filter(_allPuntos, _campus);
+  List<Categoria> get _categorias => Categoria.fromPuntos(_visiblePuntos);
+  Map<String, List<PuntoDeInteres>> get _puntosPorCategoria {
+    final grouped = <String, List<PuntoDeInteres>>{};
+    for (final p in _visiblePuntos) {
+      grouped.putIfAbsent(p.categoria, () => []).add(p);
+    }
+    return grouped;
+  }
+
   bool _isLoading = true;
   String? _error;
   int _userTotalPoints = 0;
@@ -50,17 +62,21 @@ class _HomeViewState extends State<HomeView> with TickerProviderStateMixin {
     );
     _fadeController.forward();
 
-    _getCategorias = GetCategorias(_repo);
     _getPuntosConVisita = GetPuntosConVisita(_repo);
     _getUserTotalPoints = GetUserTotalPoints(_repo);
 
     _loadData();
     ProximityService().addListener(_onProximityStateChange);
+    CampusSelection.instance.addListener(_onCampusChanged);
+  }
+
+  void _onCampusChanged() {
+    if (mounted) setState(() {});
   }
 
   void _onProximityStateChange() {
-    // Refresh when points might have changed 
-    _loadData(); 
+    // Refresh when points might have changed
+    _loadData();
   }
 
   Future<void> _refreshUserPoints() async {
@@ -79,28 +95,21 @@ class _HomeViewState extends State<HomeView> with TickerProviderStateMixin {
   void dispose() {
     _fadeController.dispose();
     ProximityService().removeListener(_onProximityStateChange);
+    CampusSelection.instance.removeListener(_onCampusChanged);
     super.dispose();
   }
 
   Future<void> _loadData() async {
     try {
       final userId = Supabase.instance.client.auth.currentUser?.id;
-      final [cats, puntos] = await Future.wait([
-        _getCategorias(userId),
-        _getPuntosConVisita(userId),
-      ]);
+      final puntos = await _getPuntosConVisita(userId);
 
       await _refreshUserPoints();
 
-      final grouped = <String, List<PuntoDeInteres>>{};
-      for (final p in puntos as List<PuntoDeInteres>) {
-        grouped.putIfAbsent(p.categoria, () => []).add(p);
-      }
-
       if (mounted) {
         setState(() {
-          _categorias = cats as List<Categoria>;
-          _puntosPorCategoria = grouped;
+          _allPuntos = puntos;
+          _error = null;
           _isLoading = false;
         });
       }
@@ -156,6 +165,11 @@ class _HomeViewState extends State<HomeView> with TickerProviderStateMixin {
                   onLogout: () async {
                     await Supabase.instance.client.auth.signOut();
                   },
+                  campusSelector: CampusDropdown(
+                    campuses: Campus.distinct(_allPuntos),
+                    selected: _campus,
+                    onChanged: CampusSelection.instance.select,
+                  ),
                 ),
                 Expanded(
                   child: Container(

@@ -5,49 +5,34 @@ import 'package:minasgo_frontend/features/map/domain/entities/location_point.dar
 import 'package:minasgo_frontend/features/map/domain/entities/punto_de_interes.dart';
 import 'package:minasgo_frontend/features/map/domain/entities/quiz_question.dart';
 import 'package:minasgo_frontend/features/map/domain/repositories/map_repository.dart';
-import 'package:minasgo_frontend/features/map/domain/usecases/unlock_poi.dart';
+import 'package:minasgo_frontend/features/map/domain/usecases/rate_poi.dart';
 
-class FakeMapRepository implements MapRepository {
-  String? capturedUserId;
-  int? capturedPuntoId;
-  int? capturedCalificacion;
-  final int pointsToReturn;
-
-  FakeMapRepository({this.pointsToReturn = 10});
+class _Repo implements MapRepository {
+  (String, int, int)? captured;
 
   @override
-  Future<int> unlockPoi(String userId, int puntoId, {int? calificacion}) async {
-    capturedUserId = userId;
-    capturedPuntoId = puntoId;
-    capturedCalificacion = calificacion;
-    return pointsToReturn;
+  Future<void> ratePoi(String userId, int puntoId, int calificacion) async {
+    captured = (userId, puntoId, calificacion);
   }
 
   @override
+  Future<int> unlockPoi(String userId, int puntoId, {int? calificacion}) =>
+      throw UnimplementedError();
+  @override
   Future<PuntoDeInteres> getPuntoById(int id) => throw UnimplementedError();
-
   @override
   Future<LocationPoint> getCurrentLocation() => throw UnimplementedError();
-
   @override
   Future<String> getPoisGeoJson() => throw UnimplementedError();
-
   @override
   Future<List<PuntoDeInteres>> getPuntosConVisita(String? userId) =>
       throw UnimplementedError();
-
   @override
   Future<List<Categoria>> getCategorias(String? userId) =>
       throw UnimplementedError();
-
-  @override
-  Future<void> ratePoi(String userId, int puntoId, int calificacion) =>
-      throw UnimplementedError();
-
   @override
   Future<QuizQuestion?> getQuestionForVisitedPoints(String userId) =>
       throw UnimplementedError();
-
   @override
   Future<AnswerValidationResult> validateAnswer({
     required String userId,
@@ -55,32 +40,22 @@ class FakeMapRepository implements MapRepository {
     required int selectedIndex,
   }) =>
       throw UnimplementedError();
-
   @override
   Future<int> getUserTotalPoints(String userId) => throw UnimplementedError();
 }
 
 void main() {
-  group('UnlockPoi', () {
-    test('passes the calificacion through to the repository', () async {
-      final repo = FakeMapRepository(pointsToReturn: 25);
-      final unlockPoi = UnlockPoi(repo);
-
-      final points = await unlockPoi('user-1', 42, calificacion: 4);
-
-      expect(points, 25);
-      expect(repo.capturedUserId, 'user-1');
-      expect(repo.capturedPuntoId, 42);
-      expect(repo.capturedCalificacion, 4);
+  group('RatePoi', () {
+    test('forwards the rating to the repository', () async {
+      final repo = _Repo();
+      await RatePoi(repo)('user-1', 7, 5);
+      expect(repo.captured, ('user-1', 7, 5));
     });
 
-    test('defaults calificacion to null when not provided', () async {
-      final repo = FakeMapRepository();
-      final unlockPoi = UnlockPoi(repo);
-
-      await unlockPoi('user-1', 42);
-
-      expect(repo.capturedCalificacion, isNull);
+    test('rejects ratings outside 1-5', () {
+      final rate = RatePoi(_Repo());
+      expect(() => rate('u', 1, 0), throwsArgumentError);
+      expect(() => rate('u', 1, 6), throwsArgumentError);
     });
   });
 }

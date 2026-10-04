@@ -10,8 +10,16 @@ import 'package:minasgo_frontend/features/map/domain/repositories/map_repository
 
 class FakeMapRepository implements MapRepository {
   final PuntoDeInteres Function(int id) onGetPuntoById;
+  final List<int> rated = [];
+  Object? rateError;
 
   FakeMapRepository(this.onGetPuntoById);
+
+  @override
+  Future<void> ratePoi(String userId, int puntoId, int calificacion) async {
+    if (rateError != null) throw rateError!;
+    rated.add(calificacion);
+  }
 
   @override
   Future<PuntoDeInteres> getPuntoById(int id) async => onGetPuntoById(id);
@@ -50,7 +58,7 @@ class FakeMapRepository implements MapRepository {
   Future<int> getUserTotalPoints(String userId) => throw UnimplementedError();
 }
 
-PuntoDeInteres _punto({required String rarity, double? calificacion}) =>
+PuntoDeInteres _punto({required String rarity, int? calificacion}) =>
     PuntoDeInteres(
       id: 1,
       nombre: 'Plaza Central',
@@ -62,7 +70,7 @@ PuntoDeInteres _punto({required String rarity, double? calificacion}) =>
       longitud: -75.57,
       visitado: true,
       rarity: rarity,
-      calificacionPromedio: calificacion,
+      miCalificacion: calificacion,
     );
 
 Widget _wrap(PuntoDeInteres punto) => MaterialApp(
@@ -76,25 +84,25 @@ Widget _wrap(PuntoDeInteres punto) => MaterialApp(
 
 void main() {
   group('PoiDetailView rating badge', () {
-    testWidgets('shows the rating on the basic (singular) card', (tester) async {
-      await tester.pumpWidget(_wrap(_punto(rarity: 'singular', calificacion: 4.5)));
+    testWidgets('shows the rating of the user on the basic (singular) card', (tester) async {
+      await tester.pumpWidget(_wrap(_punto(rarity: 'singular', calificacion: 4)));
       await tester.pump(const Duration(milliseconds: 100));
 
-      expect(find.text('4.5'), findsOneWidget);
+      expect(find.text('4.0'), findsOneWidget);
     });
 
-    testWidgets('shows the rating on the important (epic) card', (tester) async {
-      await tester.pumpWidget(_wrap(_punto(rarity: 'epic', calificacion: 3.2)));
+    testWidgets('shows the rating of the user on the important (epic) card', (tester) async {
+      await tester.pumpWidget(_wrap(_punto(rarity: 'epic', calificacion: 3)));
       await tester.pump(const Duration(milliseconds: 100));
 
-      expect(find.text('3.2'), findsOneWidget);
+      expect(find.text('3.0'), findsOneWidget);
 
       // Flush the 3s shimmer fade-out delay scheduled in initState.
       await tester.pump(const Duration(seconds: 3));
     });
 
-    testWidgets('shows the rating on the legendary card', (tester) async {
-      await tester.pumpWidget(_wrap(_punto(rarity: 'legendary', calificacion: 5.0)));
+    testWidgets('shows the rating of the user on the legendary card', (tester) async {
+      await tester.pumpWidget(_wrap(_punto(rarity: 'legendary', calificacion: 5)));
       await tester.pump(const Duration(milliseconds: 100));
 
       expect(find.text('5.0'), findsOneWidget);
@@ -122,13 +130,14 @@ void main() {
         latitud: 6.25,
         longitud: -75.57,
         visitado: false,
-        calificacionPromedio: 4.9,
+        miCalificacion: 5,
       );
 
       await tester.pumpWidget(_wrap(locked));
       await tester.pump(const Duration(milliseconds: 100));
 
-      expect(find.text('4.9'), findsNothing);
+      expect(find.text('5.0'), findsNothing);
+      expect(find.byIcon(Icons.star_border_rounded), findsNothing);
       expect(find.text('Sin calificar'), findsNothing);
     });
   });
@@ -136,7 +145,7 @@ void main() {
   group('PoiDetailView pull-to-refresh', () {
     testWidgets('refreshing re-fetches the punto and shows the new rating',
         (tester) async {
-      final original = _punto(rarity: 'singular', calificacion: 3.0);
+      final original = _punto(rarity: 'singular', calificacion: 3);
       final refreshed = PuntoDeInteres(
         id: original.id,
         nombre: original.nombre,
@@ -148,7 +157,7 @@ void main() {
         longitud: original.longitud,
         visitado: true,
         rarity: original.rarity,
-        calificacionPromedio: 4.8,
+        miCalificacion: 5,
       );
 
       final fakeRepo = FakeMapRepository((id) => refreshed);
@@ -177,12 +186,12 @@ void main() {
       await tester.pump(const Duration(seconds: 1));
       await tester.pumpAndSettle();
 
-      expect(find.text('4.8'), findsOneWidget);
+      expect(find.text('5.0'), findsOneWidget);
     });
 
     testWidgets('keeps showing old data when the refresh fails',
         (tester) async {
-      final original = _punto(rarity: 'singular', calificacion: 3.0);
+      final original = _punto(rarity: 'singular', calificacion: 3);
       final fakeRepo = FakeMapRepository((id) => throw Exception('network'));
 
       await tester.pumpWidget(
@@ -208,6 +217,92 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('3.0'), findsOneWidget);
+    });
+  });
+
+  group('PoiDetailView rating input', () {
+    Widget wrapRate(PuntoDeInteres punto, FakeMapRepository repo,
+            {ValueChanged<PuntoDeInteres>? onChanged}) =>
+        MaterialApp(
+          home: PoiDetailView(
+            punto: punto,
+            categoryName: 'Histórico',
+            pointName: punto.nombre,
+            pointDescription: punto.descripcion ?? '',
+            repository: repo,
+            userId: 'user-1',
+            onPuntoChanged: onChanged,
+          ),
+        );
+
+    testWidgets('an unrated unlocked point can be rated and shows the value',
+        (tester) async {
+      final repo = FakeMapRepository((_) => throw UnimplementedError());
+      PuntoDeInteres? changed;
+      await tester.pumpWidget(wrapRate(
+          _punto(rarity: 'singular'), repo,
+          onChanged: (p) => changed = p));
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(find.text('Sin calificar'), findsOneWidget);
+      expect(find.byIcon(Icons.star_border_rounded), findsNWidgets(5));
+
+      await tester.tap(find.byKey(const ValueKey('rate-star-4')));
+      await tester.pump();
+      await tester.pump();
+
+      expect(repo.rated, [4]);
+      expect(changed?.miCalificacion, 4);
+      expect(find.text('4.0'), findsOneWidget);
+      expect(find.text('Sin calificar'), findsNothing);
+      expect(find.text('Tu calificación'), findsOneWidget);
+    });
+
+    testWidgets('an existing rating can be changed', (tester) async {
+      final repo = FakeMapRepository((_) => throw UnimplementedError());
+      await tester.pumpWidget(
+          wrapRate(_punto(rarity: 'singular', calificacion: 2), repo));
+      await tester.pump(const Duration(milliseconds: 100));
+
+      await tester.tap(find.byKey(const ValueKey('rate-star-5')));
+      await tester.pump();
+      await tester.pump();
+
+      expect(repo.rated, [5]);
+      expect(find.text('5.0'), findsOneWidget);
+    });
+
+    testWidgets('failed save reverts the stars and shows an error',
+        (tester) async {
+      final repo = FakeMapRepository((_) => throw UnimplementedError())
+        ..rateError = Exception('network');
+      await tester.pumpWidget(wrapRate(_punto(rarity: 'singular'), repo));
+      await tester.pump(const Duration(milliseconds: 100));
+
+      await tester.tap(find.byKey(const ValueKey('rate-star-3')));
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.text('No se pudo guardar tu calificación'), findsOneWidget);
+      expect(find.byIcon(Icons.star_border_rounded), findsNWidgets(5));
+      expect(find.text('Sin calificar'), findsOneWidget);
+    });
+
+    testWidgets('locked points cannot be rated', (tester) async {
+      final repo = FakeMapRepository((_) => throw UnimplementedError());
+      const locked = PuntoDeInteres(
+        id: 2,
+        nombre: 'Zona Oculta',
+        categoria: 'historico',
+        campus: 'El Volador',
+        universidad: 'UNAL Medellín',
+        latitud: 6.25,
+        longitud: -75.57,
+      );
+      await tester.pumpWidget(wrapRate(locked, repo));
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(find.byKey(const ValueKey('rate-star-1')), findsNothing);
     });
   });
 }

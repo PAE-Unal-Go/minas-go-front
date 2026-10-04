@@ -107,17 +107,20 @@ class MapRepositoryImpl implements MapRepository {
           _supabase.from('puntos_de_interes').select(),
           _supabase
               .from('visitas')
-              .select('punto_id')
+              .select('punto_id, calificacion')
               .eq('usuario_id', userId),
         ]);
 
-        final visitadosIds = (visitasRes as List)
-            .map((v) => (v['punto_id'] as num).toInt())
-            .toSet();
+        final calificaciones = <int, int?>{
+          for (final v in visitasRes as List)
+            (v['punto_id'] as num).toInt(): (v['calificacion'] as num?)?.toInt(),
+        };
 
         return (puntosRes as List).map((row) {
           final map = Map<String, dynamic>.from(row as Map);
-          map['visitado'] = visitadosIds.contains((map['id'] as num).toInt());
+          final id = (map['id'] as num).toInt();
+          map['visitado'] = calificaciones.containsKey(id);
+          map['mi_calificacion'] = calificaciones[id];
           return PuntoDeInteres.fromMap(map);
         }).toList();
       }
@@ -143,6 +146,17 @@ class MapRepositoryImpl implements MapRepository {
           .single();
       final map = Map<String, dynamic>.from(res);
       map['visitado'] = true;
+
+      final userId = _supabase.auth.currentUser?.id;
+      if (userId != null) {
+        final visita = await _supabase
+            .from('visitas')
+            .select('calificacion')
+            .eq('usuario_id', userId)
+            .eq('punto_id', id)
+            .maybeSingle();
+        map['mi_calificacion'] = visita?['calificacion'];
+      }
       return PuntoDeInteres.fromMap(map);
     } catch (e) {
       return Future.error('Error fetching punto by id: $e');
@@ -153,30 +167,7 @@ class MapRepositoryImpl implements MapRepository {
   Future<List<Categoria>> getCategorias(String? userId) async {
     try {
       final puntos = await getPuntosConVisita(userId);
-
-      final Map<String, List<PuntoDeInteres>> grouped = {};
-      for (final p in puntos) {
-        grouped.putIfAbsent(p.categoria, () => []).add(p);
-      }
-
-      return grouped.entries.map((entry) {
-        final key = entry.key;
-        final list = entry.value;
-        final visitados = list.where((p) => p.visitado).length;
-        final imageUrl = list
-            .expand((p) => p.imagesUrls)
-            .map((url) => url.trim())
-            .firstWhere((url) => url.isNotEmpty, orElse: () => '');
-
-        return Categoria(
-          key: key,
-          nombre: Categoria.humanNombre(key),
-          imageUrl: imageUrl.isEmpty ? null : imageUrl,
-          totalPuntos: list.length,
-          visitados: visitados,
-        );
-      }).toList()
-        ..sort((a, b) => a.nombre.compareTo(b.nombre));
+      return Categoria.fromPuntos(puntos);
     } catch (e) {
       return Future.error('Error fetching categories: $e');
     }
@@ -211,6 +202,22 @@ class MapRepositoryImpl implements MapRepository {
       return 0;
     } catch (e) {
       return Future.error('Error al desbloquear punto: $e');
+    }
+  }
+
+  @override
+  Future<void> ratePoi(String userId, int puntoId, int calificacion) async {
+    try {
+      await _supabase.rpc(
+        'calificar_punto',
+        params: {
+          'p_usuario': userId,
+          'p_punto': puntoId,
+          'p_calificacion': calificacion,
+        },
+      );
+    } catch (e) {
+      return Future.error('Error al calificar punto: $e');
     }
   }
 

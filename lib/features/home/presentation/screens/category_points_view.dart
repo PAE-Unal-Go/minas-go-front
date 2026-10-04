@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../core/theme/app_design_system.dart';
 import '../../../../core/widgets/poi_image_gallery.dart';
+import '../../../../core/widgets/poi_rating_badge.dart';
 import '../../../../core/utils/poi_rarity.dart';
 import '../../../map/domain/entities/punto_de_interes.dart';
 import 'poi_detail_view.dart';
@@ -30,6 +31,13 @@ class CategoryPointsView extends StatefulWidget {
 class _CategoryPointsViewState extends State<CategoryPointsView> {
   static const double _collapseThreshold = 16;
   bool _isSummaryCollapsed = false;
+  late final List<PuntoDeInteres> _puntos = List.of(widget.puntos);
+
+  void _onPuntoChanged(PuntoDeInteres updated) {
+    final i = _puntos.indexWhere((p) => p.id == updated.id);
+    if (i == -1) return;
+    setState(() => _puntos[i] = updated);
+  }
 
   bool _onScrollNotification(ScrollNotification notification) {
     if (notification.metrics.axis != Axis.vertical) return false;
@@ -45,16 +53,16 @@ class _CategoryPointsViewState extends State<CategoryPointsView> {
 
   @override
   Widget build(BuildContext context) {
-    final discoveredCount = widget.puntos.where((p) => p.visitado).length;
-    final progress =
-        widget.puntos.isEmpty ? 0.0 : discoveredCount / widget.puntos.length;
+    final discoveredCount = _puntos.where((p) => p.visitado).length;
+    final progress = _puntos.isEmpty ? 0.0 : discoveredCount / _puntos.length;
     final topInset = MediaQuery.paddingOf(context).top;
 
-    final sortedPuntos = List<PuntoDeInteres>.from(widget.puntos)
+    final sortedPuntos = List<PuntoDeInteres>.from(_puntos)
       ..sort((a, b) {
         if (a.visitado && !b.visitado) return -1;
         if (!a.visitado && b.visitado) return 1;
-        return a.nombre.compareTo(b.nombre); // Sort alphabetically among same status
+        return a.nombre
+            .compareTo(b.nombre); // Sort alphabetically among same status
       });
 
     return Scaffold(
@@ -68,7 +76,7 @@ class _CategoryPointsViewState extends State<CategoryPointsView> {
             height: _isSummaryCollapsed ? 4 : 44,
           ),
           Expanded(
-            child: widget.puntos.isEmpty
+            child: _puntos.isEmpty
                 ? Center(
                     child: Text(
                       'No hay puntos configurados para esta categoría.',
@@ -105,6 +113,7 @@ class _CategoryPointsViewState extends State<CategoryPointsView> {
                                   pointName: punto.nombre,
                                   pointDescription: punto.descripcion ?? '',
                                   imagesUrls: punto.imagesUrls,
+                                  onPuntoChanged: _onPuntoChanged,
                                 ),
                               ),
                             );
@@ -172,7 +181,7 @@ class _CategoryPointsViewState extends State<CategoryPointsView> {
             child: _buildSummaryCard(
               progress,
               _isSummaryCollapsed,
-              '${widget.puntos.where((p) => p.visitado).length}/${widget.puntos.length}',
+              '${_puntos.where((p) => p.visitado).length}/${_puntos.length}',
             ),
           ),
         ],
@@ -471,8 +480,7 @@ class _PointGridTile extends StatelessWidget {
         ),
       _ => Container(
           decoration: const BoxDecoration(
-            borderRadius:
-                BorderRadius.all(Radius.circular(AppRadius.md)),
+            borderRadius: BorderRadius.all(Radius.circular(AppRadius.md)),
             boxShadow: [AppShadows.shadowSm],
           ),
           child: child,
@@ -532,20 +540,31 @@ class _PointGridTile extends StatelessWidget {
     return Expanded(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(8, 5, 8, 4),
-        child: Text(
-          isVisitado ? punto.nombre : 'Bloqueado',
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
-          style: TextStyle(
-            color: isVisitado && rarity != null
-                ? AppColors.textPrimary
-                : AppColors.textSecondary,
-            fontSize: 11,
-            fontWeight: isVisitado && rarity != null
-                ? AppTypography.weightSemiBold
-                : AppTypography.weightMedium,
-            height: 1.2,
-          ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Flexible(
+              child: Text(
+                isVisitado ? punto.nombre : 'Bloqueado',
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: isVisitado && rarity != null
+                      ? AppColors.textPrimary
+                      : AppColors.textSecondary,
+                  fontSize: 11,
+                  fontWeight: isVisitado && rarity != null
+                      ? AppTypography.weightSemiBold
+                      : AppTypography.weightMedium,
+                  height: 1.2,
+                ),
+              ),
+            ),
+            if (isVisitado) ...[
+              const SizedBox(height: 2),
+              PoiRatingBadge(rating: punto.miCalificacion?.toDouble()),
+            ],
+          ],
         ),
       ),
     );
@@ -565,16 +584,48 @@ class _PointImage extends StatelessWidget {
     return ColorFiltered(
       colorFilter: isVisitado
           ? const ColorFilter.matrix(<double>[
-              1, 0, 0, 0, 0,
-              0, 1, 0, 0, 0,
-              0, 0, 1, 0, 0,
-              0, 0, 0, 1, 0,
+              1,
+              0,
+              0,
+              0,
+              0,
+              0,
+              1,
+              0,
+              0,
+              0,
+              0,
+              0,
+              1,
+              0,
+              0,
+              0,
+              0,
+              0,
+              1,
+              0,
             ])
           : const ColorFilter.matrix(<double>[
-              0.2126, 0.7152, 0.0722, 0, 0,
-              0.2126, 0.7152, 0.0722, 0, 0,
-              0.2126, 0.7152, 0.0722, 0, 0,
-              0, 0, 0, 1, 0,
+              0.2126,
+              0.7152,
+              0.0722,
+              0,
+              0,
+              0.2126,
+              0.7152,
+              0.0722,
+              0,
+              0,
+              0.2126,
+              0.7152,
+              0.0722,
+              0,
+              0,
+              0,
+              0,
+              0,
+              1,
+              0,
             ]),
       child: PoiImageGallery(
         imagesUrls: urls,

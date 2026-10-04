@@ -8,10 +8,13 @@ import 'package:audioplayers/audioplayers.dart';
 
 import '../../domain/usecases/unlock_poi.dart';
 import '../../domain/entities/punto_de_interes.dart';
+import '../../domain/entities/campus.dart';
 import '../../domain/entities/categoria.dart';
 import 'package:minasgo_frontend/features/map/domain/entities/location_point.dart';
 import 'package:minasgo_frontend/features/map/data/repositories/map_repository_impl.dart';
+import 'package:minasgo_frontend/core/services/campus_selection.dart';
 import 'package:minasgo_frontend/core/services/proximity_service.dart';
+import 'package:minasgo_frontend/core/widgets/campus_dropdown.dart';
 import 'package:minasgo_frontend/features/facts/data/repositories/facts_repository_impl.dart';
 import 'package:minasgo_frontend/features/facts/domain/usecases/try_unlock_fact.dart';
 import 'package:minasgo_frontend/features/facts/fact_unlock_notifier.dart';
@@ -40,11 +43,20 @@ class _MapScreenState extends State<MapScreen>
   String? _selectedCategoria;
   List<Categoria> _categorias = [];
 
+  List<PuntoDeInteres> get _campusPuntos => Campus.filter(
+      ProximityService().allPuntos, CampusSelection.instance.selected);
+
   List<PuntoDeInteres> get _puntos {
-    final all = ProximityService().allPuntos;
+    final all = _campusPuntos;
     if (_selectedCategoria == null) return all;
     return all.where((p) => p.categoria == _selectedCategoria).toList();
   }
+
+  /// Categories of the selected campus (falls back to the loaded list while
+  /// the points are still being fetched).
+  List<Categoria> get _visibleCategorias => ProximityService().allPuntos.isEmpty
+      ? _categorias
+      : Categoria.fromPuntos(_campusPuntos);
 
   // ── Services ──
   final _repo = MapRepositoryImpl();
@@ -77,6 +89,7 @@ class _MapScreenState extends State<MapScreen>
     _pulseController!.repeat(reverse: true);
 
     ProximityService().addListener(_onProximityUpdate);
+    CampusSelection.instance.addListener(_onCampusChanged);
     _initData();
   }
 
@@ -84,6 +97,7 @@ class _MapScreenState extends State<MapScreen>
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     ProximityService().removeListener(_onProximityUpdate);
+    CampusSelection.instance.removeListener(_onCampusChanged);
     _vibrationTimer?.cancel();
     _audioPlayer.dispose();
     _pulseController?.dispose();
@@ -96,6 +110,7 @@ class _MapScreenState extends State<MapScreen>
         state == AppLifecycleState.inactive) {
       _vibrationTimer?.cancel();
     } else if (state == AppLifecycleState.resumed) {
+      unawaited(ProximityService().onAppResumed());
       if (_isNearAnyUnvisited) {
         _startProximityVibration();
       }
@@ -123,7 +138,20 @@ class _MapScreenState extends State<MapScreen>
 
   void _onProximityUpdate() {
     final pos = ProximityService().currentPosition;
-    if (pos == null || !mounted) return;
+    if (!mounted) return;
+    if (pos == null) {
+      // Position lost (GPS off / permission revoked): do not keep a stale
+      // location that would let the user unlock from far away.
+      if (_userLocation != null || _isNearAnyUnvisited) {
+        setState(() {
+          _userLocation = null;
+          _isNearAnyUnvisited = false;
+        });
+        _vibrationTimer?.cancel();
+        _resetPulseLayer();
+      }
+      return;
+    }
 
     setState(() {
       _userLocation = LocationPoint(
@@ -298,10 +326,14 @@ class _MapScreenState extends State<MapScreen>
 
     if (target == null && requestLocationIfMissing) {
       try {
-        final current = await _repo.getCurrentLocation();
+        final current = await ProximityService().restartLocation();
+        if (current == null) throw StateError('Sin ubicación');
         if (!mounted) return;
-        setState(() => _userLocation = current);
-        target = current;
+        target = LocationPoint(
+          latitude: current.latitude,
+          longitude: current.longitude,
+        );
+        setState(() => _userLocation = target);
       } catch (_) {
         if (showError && mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -369,12 +401,12 @@ class _MapScreenState extends State<MapScreen>
       builder: (_) => PoiBottomSheet(
         punto: punto,
         distanceMeters: _distanceTo(punto),
-        onUnlock: (calificacion) => _handleUnlock(punto, calificacion),
+        onUnlock: () => _handleUnlock(punto),
       ),
     );
   }
 
-  Future<void> _handleUnlock(PuntoDeInteres punto, int? calificacion) async {
+  Future<void> _handleUnlock(PuntoDeInteres punto) async {
     final userId = Supabase.instance.client.auth.currentUser?.id;
     if (userId == null) return;
     if (mounted) Navigator.of(context).pop();
@@ -383,8 +415,7 @@ class _MapScreenState extends State<MapScreen>
       if ((await Vibration.hasVibrator()) == true) {
         Vibration.vibrate(duration: 500);
       }
-      final pointsEarned =
-          await _unlockPoi(userId, punto.id, calificacion: calificacion);
+      final pointsEarned = await _unlockPoi(userId, punto.id);
       await ProximityService().refreshPuntos();
       if (mounted && _mapboxMap != null) {
         await _loadCircleLayer();
@@ -402,6 +433,7 @@ class _MapScreenState extends State<MapScreen>
           pageBuilder: (_, __, ___) => PoiUnlockCard(
             punto: _puntos.firstWhere((p) => p.id == punto.id),
             pointsEarned: pointsEarned,
+            onRated: () => ProximityService().refreshPuntos(),
             onClose: () => Navigator.of(context).pop(),
           ),
           transitionsBuilder: (_, anim, __, child) =>
@@ -425,7 +457,21 @@ class _MapScreenState extends State<MapScreen>
     return Scaffold(
       extendBodyBehindAppBar: true,
       appBar: AppBar(
-        title: const Text('Explorar'),
+        titleSpacing: 16,
+        title: Row(
+          children: [
+            const Text('Explorar'),
+            const SizedBox(width: 10),
+            if (!_isLoading)
+              Flexible(
+                child: CampusDropdown(
+                  campuses: Campus.distinct(ProximityService().allPuntos),
+                  selected: CampusSelection.instance.selected,
+                  onChanged: CampusSelection.instance.select,
+                ),
+              ),
+          ],
+        ),
         backgroundColor: AppColors.primaryMain.withValues(alpha: 0.9),
         foregroundColor: Colors.white,
         elevation: 0,
@@ -433,7 +479,7 @@ class _MapScreenState extends State<MapScreen>
           if (!_isLoading)
             CategoryDropdown(
               selectedKey: _selectedCategoria,
-              categorias: _categorias,
+              categorias: _visibleCategorias,
               onChanged: _onCategoryChanged,
             ),
         ],
@@ -468,6 +514,45 @@ class _MapScreenState extends State<MapScreen>
         ),
       ),
     );
+  }
+
+  Future<void> _onCampusChanged() async {
+    if (!mounted) return;
+    setState(() {
+      final stillThere =
+          _campusPuntos.any((p) => p.categoria == _selectedCategoria);
+      if (!stillThere) _selectedCategoria = null;
+      _isNearAnyUnvisited = false;
+    });
+    _vibrationTimer?.cancel();
+    if (_mapboxMap != null) {
+      await _loadCircleLayer();
+      await _flyToCampus();
+    }
+  }
+
+  /// Centers the camera on the points of the selected campus.
+  Future<void> _flyToCampus() async {
+    final map = _mapboxMap;
+    final puntos = _campusPuntos;
+    if (map == null || puntos.isEmpty) return;
+
+    final lat =
+        puntos.map((p) => p.latitud).reduce((a, b) => a + b) / puntos.length;
+    final lng =
+        puntos.map((p) => p.longitud).reduce((a, b) => a + b) / puntos.length;
+    final camera = CameraOptions(
+      center: Point(coordinates: Position(lng, lat)),
+      zoom: CampusSelection.instance.selected == null ? 13.0 : 16.0,
+      bearing: 0,
+      pitch: 0,
+    );
+    try {
+      await map.flyTo(
+          camera, MapAnimationOptions(duration: 900, startDelay: 0));
+    } catch (_) {
+      map.setCamera(camera);
+    }
   }
 
   Future<void> _onCategoryChanged(String? key) async {

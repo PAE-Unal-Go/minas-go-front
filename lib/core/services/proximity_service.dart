@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:geolocator/geolocator.dart' as geo;
 import '../../../features/map/domain/entities/punto_de_interes.dart';
+import 'location_tracker.dart';
 import '../../../features/map/data/repositories/map_repository_impl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -12,7 +13,12 @@ class ProximityService extends ChangeNotifier {
   ProximityService._internal();
 
   final _repo = MapRepositoryImpl();
-  StreamSubscription<geo.Position>? _positionSub;
+  late final LocationTracker _tracker = LocationTracker(
+    settings: _buildLocationSettings(),
+    onPosition: _onPosition,
+  );
+  Timer? _refreshRetry;
+  int _refreshAttempts = 0;
 
   List<PuntoDeInteres> _allPuntos = [];
   geo.Position? _currentPosition;
@@ -29,11 +35,28 @@ class ProximityService extends ChangeNotifier {
   /// Loads POIs and starts the location stream.
   Future<void> init() async {
     if (_isInitialized) return;
-
-    await refreshPuntos();
-    _startLocationStream();
     _isInitialized = true;
+
+    // Location must not depend on the POIs request: a flaky network at startup
+    // used to leave the app without position until it was reopened.
+    unawaited(_tracker.start());
+    await _loadPuntosWithRetry();
     notifyListeners();
+  }
+
+  Future<void> _loadPuntosWithRetry() async {
+    try {
+      await refreshPuntos();
+      _refreshAttempts = 0;
+    } catch (_) {
+      if (!_isInitialized || _refreshAttempts >= 5) return;
+      _refreshAttempts++;
+      _refreshRetry?.cancel();
+      _refreshRetry = Timer(
+        Duration(seconds: 3 * _refreshAttempts),
+        _loadPuntosWithRetry,
+      );
+    }
   }
 
   Future<void> refreshPuntos() async {
@@ -45,20 +68,42 @@ class ProximityService extends ChangeNotifier {
     notifyListeners();
   }
 
-  void _startLocationStream() {
-    _positionSub?.cancel();
-    _positionSub = geo.Geolocator.getPositionStream(
-      locationSettings: _buildLocationSettings(),
-    ).listen((pos) {
-      _currentPosition = pos;
-      _checkProximity();
-      notifyListeners();
-    }, onError: (_) {
-      // Keep the app functional if location permission is denied/revoked.
-      _currentPosition = null;
+  void _onPosition(geo.Position? pos) {
+    _currentPosition = pos;
+    if (pos == null) {
       _nearPOI = null;
-      notifyListeners();
-    });
+    } else {
+      _checkProximity();
+    }
+    notifyListeners();
+  }
+
+  /// Call when the app returns to the foreground: the user may have granted
+  /// the permission or toggled the GPS from the system settings meanwhile.
+  Future<void> onAppResumed() async {
+    if (!_isInitialized) return;
+    if (_currentPosition == null || !_tracker.hasRecentFix()) {
+      await _tracker.restart(requestPermission: false);
+    }
+  }
+
+  /// Forces a fresh connection (asking for permission when needed) and returns
+  /// the current position, or null when it is not available.
+  Future<geo.Position?> restartLocation() async {
+    await _tracker.restart(requestPermission: true);
+    return _currentPosition;
+  }
+
+  /// Stops tracking and clears state, e.g. on logout. The singleton stays
+  /// usable so `init()` works again on the next login.
+  Future<void> stop() async {
+    _isInitialized = false;
+    _refreshRetry?.cancel();
+    await _tracker.stop();
+    _allPuntos = [];
+    _currentPosition = null;
+    _nearPOI = null;
+    notifyListeners();
   }
 
   geo.LocationSettings _buildLocationSettings() {
@@ -127,11 +172,5 @@ class ProximityService extends ChangeNotifier {
 
   void markAsNotified(int id) {
     _notifiedIds.add(id);
-  }
-
-  @override
-  void dispose() {
-    _positionSub?.cancel();
-    super.dispose();
   }
 }

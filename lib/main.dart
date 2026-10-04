@@ -66,7 +66,7 @@ class _MainAppState extends State<MainApp> {
           (_) => false,
         );
       } else if (event == AuthChangeEvent.signedOut) {
-        ProximityService().dispose(); // Stop monitoring on logout
+        ProximityService().stop(); // Stop monitoring on logout
         _navigatorKey.currentState?.pushAndRemoveUntil(
           MaterialPageRoute(builder: (_) => const LoginView()),
           (_) => false,

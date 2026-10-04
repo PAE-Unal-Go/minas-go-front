@@ -16,124 +16,59 @@ PuntoDeInteres _lockedPunto() => const PuntoDeInteres(
     );
 
 void main() {
-  group('PoiBottomSheet rating selector', () {
-    testWidgets('shows the rating prompt and 5 stars when in range and locked',
-        (tester) async {
+  group('PoiBottomSheet', () {
+    testWidgets('does not offer rating before unlocking', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
             body: PoiBottomSheet(
               punto: _lockedPunto(),
               distanceMeters: 2,
-              onUnlock: (_) async {},
+              onUnlock: () async {},
             ),
           ),
         ),
       );
 
-      expect(
-        find.textContaining('¿Deseas calificar este punto?'),
-        findsOneWidget,
-      );
-      expect(find.byIcon(Icons.star_border_rounded), findsNWidgets(5));
+      expect(find.textContaining('calificar'), findsNothing);
+      expect(find.byIcon(Icons.star_border_rounded), findsNothing);
+      expect(find.text('Desbloquear'), findsOneWidget);
     });
 
-    testWidgets('does not show the rating prompt when out of range',
-        (tester) async {
+    testWidgets('tapping Desbloquear calls onUnlock', (tester) async {
+      var called = 0;
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: PoiBottomSheet(
+              punto: _lockedPunto(),
+              distanceMeters: 2,
+              onUnlock: () async => called++,
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Desbloquear'));
+      await tester.pump();
+
+      expect(called, 1);
+    });
+
+    testWidgets('shows the locked state when out of range', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
             body: PoiBottomSheet(
               punto: _lockedPunto(),
               distanceMeters: 50,
-              onUnlock: (_) async {},
+              onUnlock: () async {},
             ),
           ),
         ),
       );
 
-      expect(
-        find.textContaining('¿Deseas calificar este punto?'),
-        findsNothing,
-      );
-    });
-
-    testWidgets('tapping the 4th star fills 4 stars and unlock passes 4',
-        (tester) async {
-      int? received;
-
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: PoiBottomSheet(
-              punto: _lockedPunto(),
-              distanceMeters: 2,
-              onUnlock: (calificacion) async {
-                received = calificacion;
-              },
-            ),
-          ),
-        ),
-      );
-
-      await tester.tap(find.byIcon(Icons.star_border_rounded).at(3));
-      await tester.pump();
-
-      expect(find.byIcon(Icons.star_rounded), findsNWidgets(4));
-      expect(find.byIcon(Icons.star_border_rounded), findsOneWidget);
-
-      await tester.tap(find.text('Desbloquear'));
-      await tester.pump();
-
-      expect(received, 4);
-    });
-
-    testWidgets('tapping the selected star again deselects it',
-        (tester) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: PoiBottomSheet(
-              punto: _lockedPunto(),
-              distanceMeters: 2,
-              onUnlock: (_) async {},
-            ),
-          ),
-        ),
-      );
-
-      await tester.tap(find.byIcon(Icons.star_border_rounded).at(2));
-      await tester.pump();
-      expect(find.byIcon(Icons.star_rounded), findsNWidgets(3));
-
-      await tester.tap(find.byIcon(Icons.star_rounded).at(2));
-      await tester.pump();
-      expect(find.byIcon(Icons.star_rounded), findsNothing);
-      expect(find.byIcon(Icons.star_border_rounded), findsNWidgets(5));
-    });
-
-    testWidgets('unlocking without selecting a star passes null',
-        (tester) async {
-      int? received = -1; // sentinel to distinguish "never called"
-
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: PoiBottomSheet(
-              punto: _lockedPunto(),
-              distanceMeters: 2,
-              onUnlock: (calificacion) async {
-                received = calificacion;
-              },
-            ),
-          ),
-        ),
-      );
-
-      await tester.tap(find.text('Desbloquear'));
-      await tester.pump();
-
-      expect(received, isNull);
+      expect(find.text('Debes estar más cerca'), findsOneWidget);
     });
   });
 }
