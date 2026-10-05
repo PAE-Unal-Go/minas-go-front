@@ -1,5 +1,7 @@
 import 'package:flutter/foundation.dart';
 
+import '../../features/map/domain/entities/campus.dart';
+
 /// Campus currently selected by the user, shared by home and map.
 /// `null` means "all campuses".
 class CampusSelection extends ChangeNotifier {
@@ -14,8 +16,9 @@ class CampusSelection extends ChangeNotifier {
   String? get selected => _selected;
 
   void select(String? campus) {
-    if (campus == _selected) return;
-    _selected = campus;
+    final next = campus == null ? null : Campus.groupOf(campus);
+    if (next == _selected) return;
+    _selected = next;
     notifyListeners();
   }
 

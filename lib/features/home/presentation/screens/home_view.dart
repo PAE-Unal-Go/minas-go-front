@@ -107,6 +107,10 @@ class _HomeViewState extends State<HomeView> with TickerProviderStateMixin {
       await _refreshUserPoints();
 
       if (mounted) {
+        final campuses = Campus.distinct(puntos);
+        if (CampusSelection.instance.selected == null && campuses.isNotEmpty) {
+          CampusSelection.instance.select(campuses.first);
+        }
         setState(() {
           _allPuntos = puntos;
           _error = null;

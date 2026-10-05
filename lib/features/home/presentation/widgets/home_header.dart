@@ -105,8 +105,9 @@ class HomeHeader extends StatelessWidget {
             ],
           ),
           if (campusSelector != null) ...[
-            const SizedBox(height: 14),
+            const SizedBox(height: 18),
             campusSelector!,
+            const SizedBox(height: 4),
           ],
         ],
       ),

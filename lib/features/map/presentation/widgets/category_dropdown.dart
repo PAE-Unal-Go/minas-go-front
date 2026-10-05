@@ -24,18 +24,16 @@ class CategoryDropdown extends StatelessWidget {
       ),
     ];
 
-    return Padding(
-      padding: const EdgeInsets.only(right: 12),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<String?>(
-          value: selectedKey,
-          dropdownColor: AppColors.primaryMain,
-          style: const TextStyle(color: Colors.white, fontSize: 13),
-          iconEnabledColor: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          items: items,
-          onChanged: onChanged,
-        ),
+    return DropdownButtonHideUnderline(
+      child: DropdownButton<String?>(
+        value: selectedKey,
+        isDense: true,
+        dropdownColor: AppColors.primaryMain,
+        style: const TextStyle(color: Colors.white, fontSize: 13),
+        iconEnabledColor: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        items: items,
+        onChanged: onChanged,
       ),
     );
   }

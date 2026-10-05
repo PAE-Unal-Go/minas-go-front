@@ -25,18 +25,41 @@ PuntoDeInteres _p(
 
 void main() {
   group('Campus', () {
-    test('maps the known campus keys of the database to readable names', () {
-      expect(Campus.humanNombre('minas'), 'Minas');
-      expect(Campus.humanNombre('volador'), 'El Volador');
-      expect(Campus.humanNombre('rio'), 'El Río');
-      expect(Campus.humanNombre('rio_de_janeiro'), 'Instituto Benjamin Constant');
+    test('maps DB keys and groups to the two display campuses', () {
+      expect(
+        Campus.humanNombre('minas'),
+        'Universidad Nacional de Colombia (Medellín)',
+      );
+      expect(
+        Campus.humanNombre('volador'),
+        'Universidad Nacional de Colombia (Medellín)',
+      );
+      expect(
+        Campus.humanNombre('rio'),
+        'Universidad Nacional de Colombia (Medellín)',
+      );
+      expect(
+        Campus.humanNombre(Campus.unalMedellin),
+        'Universidad Nacional de Colombia (Medellín)',
+      );
+      expect(
+        Campus.humanNombre('rio_de_janeiro'),
+        'Instituto Benjamin Constant',
+      );
     });
 
     test('title-cases unknown keys instead of showing raw snake_case', () {
       expect(Campus.humanNombre('nuevo_campus'), 'Nuevo Campus');
     });
 
-    test('distinct returns each campus once, sorted by display name', () {
+    test('groupOf maps raw keys into UI campus groups', () {
+      expect(Campus.groupOf('minas'), Campus.unalMedellin);
+      expect(Campus.groupOf('volador'), Campus.unalMedellin);
+      expect(Campus.groupOf('rio'), Campus.unalMedellin);
+      expect(Campus.groupOf('rio_de_janeiro'), Campus.benjaminConstant);
+    });
+
+    test('distinct returns the two campus groups, UNAL first', () {
       final puntos = [
         _p(1, 'volador'),
         _p(2, 'minas'),
@@ -48,16 +71,32 @@ void main() {
 
       expect(
         Campus.distinct(puntos),
-        ['rio', 'volador', 'rio_de_janeiro', 'minas'],
+        [Campus.unalMedellin, Campus.benjaminConstant],
       );
     });
 
-    test('filter keeps only the selected campus, or everything when null', () {
-      final puntos = [_p(1, 'minas'), _p(2, 'volador'), _p(3, 'minas')];
+    test('filter keeps all UNAL Medellín campuses when that group is selected',
+        () {
+      final puntos = [
+        _p(1, 'minas'),
+        _p(2, 'volador'),
+        _p(3, 'rio'),
+        _p(4, 'rio_de_janeiro'),
+      ];
 
-      expect(Campus.filter(puntos, null), hasLength(3));
-      expect(Campus.filter(puntos, 'minas').map((p) => p.id), [1, 3]);
-      expect(Campus.filter(puntos, 'rio'), isEmpty);
+      expect(Campus.filter(puntos, null), hasLength(4));
+      expect(
+        Campus.filter(puntos, Campus.unalMedellin).map((p) => p.id),
+        [1, 2, 3],
+      );
+      expect(
+        Campus.filter(puntos, 'minas').map((p) => p.id),
+        [1, 2, 3],
+      );
+      expect(
+        Campus.filter(puntos, Campus.benjaminConstant).map((p) => p.id),
+        [4],
+      );
     });
   });
 
@@ -79,11 +118,15 @@ void main() {
       final all = [
         _p(1, 'minas', categoria: 'academico'),
         _p(2, 'volador', categoria: 'servicios'),
+        _p(3, 'rio_de_janeiro', categoria: 'arte_cultura'),
       ];
 
-      expect(Categoria.fromPuntos(Campus.filter(all, 'minas')).map((c) => c.key),
-          ['academico']);
-      expect(Categoria.fromPuntos(all), hasLength(2));
+      expect(
+        Categoria.fromPuntos(Campus.filter(all, Campus.unalMedellin))
+            .map((c) => c.key),
+        ['academico', 'servicios'],
+      );
+      expect(Categoria.fromPuntos(all), hasLength(3));
     });
 
     test('uses the first non-empty image as category image', () {
@@ -106,12 +149,18 @@ void main() {
       selection.addListener(() => notified++);
 
       selection.select('minas');
-      selection.select('minas');
+      selection.select(Campus.unalMedellin);
       selection.select(null);
       selection.clear();
 
       expect(notified, 2);
       expect(selection.selected, isNull);
+    });
+
+    test('normalizes raw campus keys to their group', () {
+      final selection = CampusSelection.test();
+      selection.select('volador');
+      expect(selection.selected, Campus.unalMedellin);
     });
   });
 }

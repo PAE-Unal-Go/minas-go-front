@@ -457,32 +457,56 @@ class _MapScreenState extends State<MapScreen>
     return Scaffold(
       extendBodyBehindAppBar: true,
       appBar: AppBar(
+        centerTitle: false,
         titleSpacing: 16,
-        title: Row(
+        toolbarHeight: _isLoading ? kToolbarHeight : 104,
+        title: SizedBox(
+          width: double.infinity,
+          child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Text('Explorar'),
-            const SizedBox(width: 10),
-            if (!_isLoading)
-              Flexible(
-                child: CampusDropdown(
-                  campuses: Campus.distinct(ProximityService().allPuntos),
-                  selected: CampusSelection.instance.selected,
-                  onChanged: CampusSelection.instance.select,
-                ),
+            Row(
+              children: [
+                const Text('Explorar'),
+                const Spacer(),
+                if (!_isLoading)
+                  CategoryDropdown(
+                    selectedKey: _selectedCategoria,
+                    categorias: _visibleCategorias,
+                    onChanged: _onCategoryChanged,
+                  ),
+              ],
+            ),
+            if (!_isLoading) ...[
+              const SizedBox(height: 12),
+              Builder(
+                builder: (context) {
+                  final campuses =
+                      Campus.distinct(ProximityService().allPuntos);
+                  if (CampusSelection.instance.selected == null &&
+                      campuses.isNotEmpty) {
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      CampusSelection.instance.select(campuses.first);
+                    });
+                  }
+                  return CampusDropdown(
+                    campuses: campuses,
+                    selected: CampusSelection.instance.selected,
+                    onChanged: CampusSelection.instance.select,
+                    expanded: true,
+                  );
+                },
               ),
+              const SizedBox(height: 4),
+            ],
           ],
+          ),
         ),
         backgroundColor: AppColors.primaryMain.withValues(alpha: 0.9),
         foregroundColor: Colors.white,
         elevation: 0,
-        actions: [
-          if (!_isLoading)
-            CategoryDropdown(
-              selectedKey: _selectedCategoria,
-              categorias: _visibleCategorias,
-              onChanged: _onCategoryChanged,
-            ),
-        ],
+        actions: const [],
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -531,19 +555,17 @@ class _MapScreenState extends State<MapScreen>
     }
   }
 
-  /// Centers the camera on the points of the selected campus.
+  /// Flies to the nearest POI of the selected campus (so the map always
+  /// lands on a visible point, not the empty midpoint between campuses).
   Future<void> _flyToCampus() async {
     final map = _mapboxMap;
-    final puntos = _campusPuntos;
+    final puntos = _puntos.isNotEmpty ? _puntos : _campusPuntos;
     if (map == null || puntos.isEmpty) return;
 
-    final lat =
-        puntos.map((p) => p.latitud).reduce((a, b) => a + b) / puntos.length;
-    final lng =
-        puntos.map((p) => p.longitud).reduce((a, b) => a + b) / puntos.length;
+    final target = _nearestPunto(puntos) ?? puntos.first;
     final camera = CameraOptions(
-      center: Point(coordinates: Position(lng, lat)),
-      zoom: CampusSelection.instance.selected == null ? 13.0 : 16.0,
+      center: Point(coordinates: Position(target.longitud, target.latitud)),
+      zoom: 16.5,
       bearing: 0,
       pitch: 0,
     );
@@ -553,6 +575,34 @@ class _MapScreenState extends State<MapScreen>
     } catch (_) {
       map.setCamera(camera);
     }
+  }
+
+  /// Closest point to the user; null if location is unavailable.
+  PuntoDeInteres? _nearestPunto(List<PuntoDeInteres> puntos) {
+    var userLat = _userLocation?.latitude;
+    var userLng = _userLocation?.longitude;
+    if (userLat == null || userLng == null) {
+      final pos = ProximityService().currentPosition;
+      if (pos == null) return null;
+      userLat = pos.latitude;
+      userLng = pos.longitude;
+    }
+
+    PuntoDeInteres? best;
+    var bestDist = double.infinity;
+    for (final p in puntos) {
+      final d = geo.Geolocator.distanceBetween(
+        userLat,
+        userLng,
+        p.latitud,
+        p.longitud,
+      );
+      if (d < bestDist) {
+        bestDist = d;
+        best = p;
+      }
+    }
+    return best;
   }
 
   Future<void> _onCategoryChanged(String? key) async {

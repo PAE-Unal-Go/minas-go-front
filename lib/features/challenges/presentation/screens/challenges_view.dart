@@ -44,6 +44,7 @@ class _ChallengesViewState extends State<ChallengesView> {
   bool _lastCorrect = false;
   int _userTotalPoints = 0;
   Timer? _redirectTimer;
+  bool _showRedirectDialog = false;
 
   final _repo = MapRepositoryImpl();
   late final GetQuestionForVisitedPoints _getQuestion;
@@ -67,9 +68,14 @@ class _ChallengesViewState extends State<ChallengesView> {
 
   void _scheduleRedirectToHome() {
     _redirectTimer?.cancel();
-    _redirectTimer = Timer(const Duration(seconds: 2), () {
+    // Let "¡Correcto!" / feedback show briefly, then warn about redirect.
+    _redirectTimer = Timer(const Duration(milliseconds: 700), () {
       if (!mounted) return;
-      widget.onAnswerCompleted?.call();
+      setState(() => _showRedirectDialog = true);
+      _redirectTimer = Timer(const Duration(milliseconds: 1500), () {
+        if (!mounted) return;
+        widget.onAnswerCompleted?.call();
+      });
     });
   }
 
@@ -203,129 +209,194 @@ class _ChallengesViewState extends State<ChallengesView> {
 
     return Scaffold(
       backgroundColor: AppColors.primaryMain,
-      body: Column(
+      body: Stack(
         children: [
-          ChallengesTopBar(points: _userTotalPoints),
-          Expanded(
-            child: Container(
-              width: double.infinity,
-              decoration: const BoxDecoration(
-                color: AppColors.background,
-                borderRadius: BorderRadius.vertical(
-                  top: Radius.circular(AppRadius.xl),
-                ),
-              ),
-              child: SafeArea(
-                top: false,
-                bottom: false,
-                child: AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 250),
-                  layoutBuilder: (currentChild, previousChildren) {
-                    return Stack(
-                      alignment: Alignment.topCenter,
-                      children: <Widget>[
-                        ...previousChildren,
-                        if (currentChild != null) currentChild,
-                      ],
-                    );
-                  },
-                  child: _isLoading
-                      ? const Center(
-                          child: CircularProgressIndicator(
-                            color: AppColors.primaryMain,
-                          ),
-                        )
-                      : _error != null
-                          ? Center(
-                              child: Padding(
-                                padding: const EdgeInsets.all(18),
-                                child: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    const Icon(
-                                      Icons.lock_outline_rounded,
-                                      size: 40,
-                                      color: AppColors.textSecondary,
-                                    ),
-                                    const SizedBox(height: 10),
-                                    Text(
-                                      _error!,
-                                      textAlign: TextAlign.center,
-                                      style: const TextStyle(
-                                        color: AppColors.textPrimary,
-                                        fontWeight: AppTypography.weightMedium,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 14),
-                                    FilledButton(
-                                      onPressed: _loadQuestion,
-                                      style: FilledButton.styleFrom(
-                                        backgroundColor: AppColors.primaryMain,
-                                        foregroundColor: Colors.white,
-                                        padding: const EdgeInsets.symmetric(
-                                          vertical: 12,
-                                          horizontal: 18,
-                                        ),
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius:
-                                              BorderRadius.circular(AppRadius.pill),
-                                        ),
-                                      ),
-                                      child: const Text('Reintentar'),
-                                    ),
-                                  ],
-                                ),
+          Column(
+            children: [
+              ChallengesTopBar(points: _userTotalPoints),
+              Expanded(
+                child: Container(
+                  width: double.infinity,
+                  decoration: const BoxDecoration(
+                    color: AppColors.background,
+                    borderRadius: BorderRadius.vertical(
+                      top: Radius.circular(AppRadius.xl),
+                    ),
+                  ),
+                  child: SafeArea(
+                    top: false,
+                    bottom: false,
+                    child: AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 250),
+                      layoutBuilder: (currentChild, previousChildren) {
+                        return Stack(
+                          alignment: Alignment.topCenter,
+                          children: <Widget>[
+                            ...previousChildren,
+                            if (currentChild != null) currentChild,
+                          ],
+                        );
+                      },
+                      child: _isLoading
+                          ? const Center(
+                              child: CircularProgressIndicator(
+                                color: AppColors.primaryMain,
                               ),
                             )
-                          : SingleChildScrollView(
-                              key: ValueKey(_question.id),
-                              padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.stretch,
-                                children: [
-                                  PointReferenceHeader(question: _question),
-                                  const SizedBox(height: 14),
-                                  ChallengeQuestionCard(question: _question),
-                                  const SizedBox(height: 14),
-                                  ...List.generate(_question.options.length,
-                                      (index) {
-                                    return Padding(
-                                      padding:
-                                          const EdgeInsets.only(bottom: 10),
-                                      child: ChallengeOptionTile(
-                                        label: String.fromCharCode(65 + index),
-                                        text: _question.options[index],
-                                        selected: _selectedIndex == index,
-                                        answered: _answered,
-                                        isCorrect: index == _question.correctIndex,
-                                        onTap: () => _onOptionTap(index),
-                                      ),
-                                    );
-                                  }),
-                                  const SizedBox(height: 8),
-                                  AnimatedSwitcher(
-                                    duration:
-                                        const Duration(milliseconds: 220),
-                                    child: !_answered
-                                        ? const ChallengePromptMessage()
-                                        : ChallengeFeedbackCard(
-                                            key: ValueKey(
-                                                'feedback-${_selectedIndex ?? -1}'),
-                                            success: _lastCorrect,
-                                            message: _lastCorrect
-                                                ? 'Ganaste $_lastPointsEarned puntos.'
-                                              : 'En la próxima lo lograrás.',
+                          : _error != null
+                              ? Center(
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(18),
+                                    child: Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        const Icon(
+                                          Icons.lock_outline_rounded,
+                                          size: 40,
+                                          color: AppColors.textSecondary,
+                                        ),
+                                        const SizedBox(height: 10),
+                                        Text(
+                                          _error!,
+                                          textAlign: TextAlign.center,
+                                          style: const TextStyle(
+                                            color: AppColors.textPrimary,
+                                            fontWeight:
+                                                AppTypography.weightMedium,
                                           ),
+                                        ),
+                                        const SizedBox(height: 14),
+                                        FilledButton(
+                                          onPressed: _loadQuestion,
+                                          style: FilledButton.styleFrom(
+                                            backgroundColor:
+                                                AppColors.primaryMain,
+                                            foregroundColor: Colors.white,
+                                            padding: const EdgeInsets.symmetric(
+                                              vertical: 12,
+                                              horizontal: 18,
+                                            ),
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(
+                                                      AppRadius.pill),
+                                            ),
+                                          ),
+                                          child: const Text('Reintentar'),
+                                        ),
+                                      ],
+                                    ),
                                   ),
-                                  SizedBox(height: 18 + bottomPadding),
-                                ],
-                              ),
-                            ),
+                                )
+                              : SingleChildScrollView(
+                                  key: ValueKey(_question.id),
+                                  padding: const EdgeInsets.fromLTRB(
+                                      16, 12, 16, 20),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.stretch,
+                                    children: [
+                                      PointReferenceHeader(
+                                          question: _question),
+                                      const SizedBox(height: 14),
+                                      ChallengeQuestionCard(
+                                          question: _question),
+                                      const SizedBox(height: 14),
+                                      ...List.generate(
+                                          _question.options.length, (index) {
+                                        return Padding(
+                                          padding: const EdgeInsets.only(
+                                              bottom: 10),
+                                          child: ChallengeOptionTile(
+                                            label: String.fromCharCode(
+                                                65 + index),
+                                            text: _question.options[index],
+                                            selected: _selectedIndex == index,
+                                            answered: _answered,
+                                            isCorrect: index ==
+                                                _question.correctIndex,
+                                            onTap: () => _onOptionTap(index),
+                                          ),
+                                        );
+                                      }),
+                                      const SizedBox(height: 8),
+                                      AnimatedSwitcher(
+                                        duration: const Duration(
+                                            milliseconds: 220),
+                                        child: !_answered
+                                            ? const ChallengePromptMessage()
+                                            : ChallengeFeedbackCard(
+                                                key: ValueKey(
+                                                    'feedback-${_selectedIndex ?? -1}'),
+                                                success: _lastCorrect,
+                                                message: _lastCorrect
+                                                    ? 'Ganaste $_lastPointsEarned puntos.'
+                                                    : 'En la próxima lo lograrás.',
+                                              ),
+                                      ),
+                                      SizedBox(height: 18 + bottomPadding),
+                                    ],
+                                  ),
+                                ),
+                    ),
+                  ),
                 ),
               ),
+            ],
+          ),
+          if (_showRedirectDialog) const _RedirectOverlay(),
+        ],
+      ),
+    );
+  }
+}
+
+class _RedirectOverlay extends StatelessWidget {
+  const _RedirectOverlay();
+
+  @override
+  Widget build(BuildContext context) {
+    return AbsorbPointer(
+      child: ColoredBox(
+        color: Colors.black.withValues(alpha: 0.45),
+        child: Center(
+          child: Container(
+            margin: const EdgeInsets.symmetric(horizontal: 36),
+            padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 22),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.92),
+              borderRadius: BorderRadius.circular(AppRadius.lg),
+              boxShadow: const [
+                BoxShadow(
+                  color: Color(0x33000000),
+                  blurRadius: 24,
+                  offset: Offset(0, 8),
+                ),
+              ],
+            ),
+            child: const Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.explore_rounded,
+                  size: 36,
+                  color: AppColors.primaryMain,
+                ),
+                SizedBox(height: 12),
+                Text(
+                  'Redirigiéndote para explorar...',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: AppTypography.fontSizeLg,
+                    fontWeight: AppTypography.weightBold,
+                    height: 1.25,
+                  ),
+                ),
+              ],
             ),
           ),
-        ],
+        ),
       ),
     );
   }
