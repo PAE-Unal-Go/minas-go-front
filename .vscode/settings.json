@@ -1,0 +1,6 @@
+{
+    "java.configuration.updateBuildConfiguration": "automatic",
+    "dart.flutterRunAdditionalArgs": [
+        "--dart-define-from-file=.env"
+    ]
+}
